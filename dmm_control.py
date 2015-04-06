@@ -231,6 +231,7 @@ class GraphFrame(wx.Frame):
 	
 	def create_main_panel(self):
 		self.panel = wx.Panel(self)
+		self.Bind(wx.EVT_CLOSE, self.on_exit)
 		self.init_plot()
 		self.canvas = FigCanvas(self.panel, -1, self.fig)
 
@@ -504,7 +505,7 @@ class GraphFrame(wx.Frame):
 		self.draw_plot()
 	
 	def on_exit(self, event):
-		self.Destroy()
+		sys.exit(0)
 	
 class Units:
 	def __init__(self):
