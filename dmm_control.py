@@ -568,7 +568,7 @@ class Units:
 			return [number, '']
 
 if __name__ == '__main__':
-	app = wx.PySimpleApp()
+	app = wx.App(False)
 	app.frame = GraphFrame()
 	app.frame.Show()
 	app.MainLoop()
