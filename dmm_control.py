@@ -15,7 +15,7 @@ from pylab import get_current_fig_manager as gcfm
 import HP_3457A
 import csv
 import math
-hp = HP_3457A.hp()
+hp = HP_3457A.hp("COM6")
 
 class DataGen(object):
 	def __init__(self, init=50):
@@ -406,7 +406,7 @@ class GraphFrame(wx.Frame):
 		
 		if len(self.data)>1:
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen()-1])[0])[0:8]+" "+Units().convert(self.data[self.dataval.getlen()-1])[1]+self.Mode[2])
-			offset = hp.getOffset(self.Mode[3],self.data[self.dataval.getlen()-1], "1", "6.5")
+			offset = hp.getOffset(self.Mode[3],self.data[self.dataval.getlen()-1])
 			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen()-1]+offset)[0])[0:8]+" "+Units().convert(self.data[self.dataval.getlen()-1]+offset)[1]+self.Mode[2])
 			self.lowerLim.SetValue(str(self.data[self.dataval.getlen()-1]-offset)[0:8]+" "+Units().convert(self.data[self.dataval.getlen()-1]-offset)[1]+self.Mode[2])
 			max1 = Units().convert(self.dataval.getmax())

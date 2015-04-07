@@ -4,13 +4,25 @@ import math
 import serial
 
 class hp():
-	def __init__(self):"""
-		self.ser = serial.Serial('COM3', 460800)
+	global unit
+	unit = "dcv"
+	def __init__(self, com):
+		self.gotPlc = False
+		self.gotDigits = False
+		self.plc = 10
+		self.digits = '6.5'
+		"""self.ser = serial.Serial(com, 460800)
 		self.ser.write(b'+addr 22;')
 		self.ser.write(b'OFORMAT ASCII;')"""
-	def getOffset(self, unit, value, plc, digits):
-		if (float(digits)>6.5):
-			digits='6.5'
+		
+		
+	def getOffset(self, unit, value):
+		digit = self.digits
+		plc = str(self.plc)
+		if float(plc)>1:
+			plc = "1"
+		if (float(digit)>6.5):
+			digit='6.5'
 		#DC Volts Spec
 		dcvRes = {'30mv':{'6.5':10e-9, '5.5':100e-9, '4.5':1e-6, '3.5':10e-6},
 		'300mv':{'6.5':100e-9, '5.5':1e-6, '4.5':10e-6, '3.5':100e-6},
@@ -144,14 +156,14 @@ class hp():
 			elif (value < 3.03):range = '3v'
 			elif (value < 30.3):range = '30v'
 			elif (value < 303):range = '300v'
-			return ((value*dcvAcc[range][plc]['acc'])+dcvRes[range][digits]*dcvAcc[range][plc]['counts'])
+			return ((value*dcvAcc[range][plc]['acc'])+dcvRes[range][digit]*dcvAcc[range][plc]['counts'])
 		elif (unit=="dci"):
 			if (value < 303e-6):range = '300ua'
 			elif (value < 3.03e-3):range = '3ma'
 			elif (value < 30.3e-3):range = '30ma'
 			elif (value < 303e-3):range = '300ma'
 			else :range = '1a'
-			return ((value*dciAcc[range][plc]['acc'])+dciRes[range][digits]*dciAcc[range][plc]['counts'])
+			return ((value*dciAcc[range][plc]['acc'])+dciRes[range][digit]*dciAcc[range][plc]['counts'])
 		elif (unit=="ohms2"):
 			if (value < 30.3):range = '30'
 			elif (value < 303):range = '300'
@@ -162,7 +174,7 @@ class hp():
 			elif (value < 30.3e6):range = '30m'
 			elif (value < 303e6):range = '300m'
 			elif (value < 3.03e12):range = '3g'
-			return((value*ohms2Acc[range][plc]['acc'])+ohmsRes[range][digits]*ohms2Acc[range][plc]['counts'])
+			return((value*ohms2Acc[range][plc]['acc'])+ohmsRes[range][digit]*ohms2Acc[range][plc]['counts'])
 		elif (unit=="ohms4"):
 			if (value < 30.3):range = '30'
 			elif (value < 303):range = '300'
@@ -173,7 +185,7 @@ class hp():
 			elif (value < 30.3e6):range = '30m'
 			elif (value < 303e6):range = '300m'
 			elif (value < 3.03e12):range = '3g'
-			return((value*ohms4Acc[range][plc]['acc'])+ohmsRes[range][digits]*ohms4Acc[range][plc]['counts'])
+			return((value*ohms4Acc[range][plc]['acc'])+ohmsRes[range][digit]*ohms4Acc[range][plc]['counts'])
 		elif (unit=="acv"):
 			if (float(plc)>1):plc='1'
 			freq = self.getFrequency()
@@ -190,7 +202,7 @@ class hp():
 			elif (value < 303):range = '300v'
 			if (value > 32.5): acvAcc = acvHiAcc
 			else: acvAcc = acvLoAcc
-			return((value*acvAcc[freq][plc]['acc'])+acvRes[range][digits]*acvAcc[freq][plc]['counts'])
+			return((value*acvAcc[freq][plc]['acc'])+acvRes[range][digit]*acvAcc[freq][plc]['counts'])
 		elif (unit=="acdcv"):
 			if (float(plc)>1):plc='1'
 			freq = self.getFrequency()
@@ -207,7 +219,7 @@ class hp():
 			elif (value < 303):range = '300v'
 			if (value > 32.5): acdcvAcc = acdcvHiAcc
 			else: acdcvAcc = acdcvLoAcc
-			return((value*acdcvAcc[freq][plc]['acc'])+acvRes[range][digits]*acdcvAcc[freq][plc]['counts'])
+			return((value*acdcvAcc[freq][plc]['acc'])+acvRes[range][digit]*acdcvAcc[freq][plc]['counts'])
 		elif (unit=="aci"):
 			if (float(plc)>1):plc='1'
 			freq = self.getFrequency()
@@ -222,7 +234,7 @@ class hp():
 				range = '1a'
 				aciAcc = aciHiAcc
 			else: aciAcc = aciLoAcc
-			return ((value*aciAcc[freq][plc]['acc'])+aciRes[range][digits]*aciAcc[freq][plc]['counts'])
+			return ((value*aciAcc[freq][plc]['acc'])+aciRes[range][digit]*aciAcc[freq][plc]['counts'])
 		elif (unit=="acdci"):
 			if (float(plc)>1):plc='1'
 			freq = self.getFrequency()
@@ -237,7 +249,7 @@ class hp():
 				range = '1a'
 				acdciAcc = acdciHiAcc
 			else: acdciAcc = acdciLoAcc
-			return((value*acdciAcc[freq][plc]['acc'])+aciRes[range][digits]*acdciAcc[freq][plc]['counts'])
+			return((value*acdciAcc[freq][plc]['acc'])+aciRes[range][digit]*acdciAcc[freq][plc]['counts'])
 		elif (unit == "freq"):
 			freq = self.getFrequency()
 			if (freq < 400):range='10'
@@ -250,10 +262,54 @@ class hp():
 			return(value*freqAcc[range])
 			
 	def getFrequency(self):
-		return 6000
+		"""global unit
+		units = unit
+		self.setMeasure("freq")
+		freq = self.measure()
+		self.setMeasure(units)
+		return freq"""
+		return 60
+	
 	def measure(self):
-		return
-	def setMeasure(self, unit):
+		if(float(self.digits)>6.5):
+			value = self.ser.readline()
+			self.ser.write(b'RMATH HIRES;')
+			return value + self.ser.readline()
+		return self.ser.readline()
+	
+	def getPlc(self):
+		if gotPlc:
+			return plc
+		else:
+			self.ser.write(b'NPLC?')
+			plc = self.ser.readline()
+			gotPlc = True
+			return plc
+			
+	def getDigits(self):
+		if gotDigits:
+			return digits
+		else:
+			self.ser.write(b'NPLC?')
+			digits = self.ser.readline()
+			if float(digits)<=.0005:
+				digits = '3.5'
+			elif float(digits)<=.005:
+				digits = '4.5'
+			elif float(digits)<=.1:
+				digits = '5.5'
+			elif float(digits)<=1:
+				digits = '6.5'
+			elif float(digits)<=10:
+				digits = '7.5'
+			elif float(digits)<=100:
+				digits = '7.5'
+			gotDigits = True
+			return digits
+			
+	def setMeasure(self, units):
+		global unit
+		unit = units
 		if (unit=="dcv"):
 			self.ser.write(b'F10;')
 		elif (unit=="dci"):
