@@ -3,6 +3,8 @@ import time
 import math
 import serial
 
+global unit
+
 class hp():
 	global unit
 	unit = "dcv"
@@ -11,10 +13,10 @@ class hp():
 		self.gotDigits = False
 		self.plc = 10
 		self.digits = '6.5'
-		"""self.ser = serial.Serial(com, 460800)
+		self.ser = serial.Serial(com, 460800)
 		self.ser.write(b'+addr 22;')
 		self.ser.write(b'END ALWAYS;')
-		self.ser.write(b'OFORMAT ASCII;')"""
+		self.ser.write(b'OFORMAT ASCII;')
 		
 		
 	def getOffset(self, unit, value):
@@ -263,13 +265,12 @@ class hp():
 			return(value*freqAcc[range])
 			
 	def getFrequency(self):
-		"""global unit
+		global unit
 		units = unit
 		self.setMeasure("freq")
 		freq = self.measure()
 		self.setMeasure(units)
-		return freq"""
-		return 60
+		return freq
 	
 	def measure(self):
 		if(float(self.digits)>6.5):
@@ -279,16 +280,16 @@ class hp():
 		return self.ser.readline()
 	
 	def getPlc(self):
-		if gotPlc:
+		if self.gotPlc:
 			return plc
 		else:
 			self.ser.write(b'NPLC?')
 			plc = self.ser.readline()
-			gotPlc = True
+			self.gotPlc = True
 			return plc
 			
 	def getDigits(self):
-		if gotDigits:
+		if self.gotDigits:
 			return digits
 		else:
 			self.ser.write(b'NPLC?')
@@ -305,7 +306,7 @@ class hp():
 				digits = '7.5'
 			elif float(digits)<=100:
 				digits = '7.5'
-			gotDigits = True
+			self.gotDigits = True
 			return digits
 			
 	def setMeasure(self, units):
@@ -334,8 +335,6 @@ class hp():
 	def setGPIBAddr(self, addr):
 		self.ser.write(b'+addr '+addr)
 		self.ser.write(b'OFORMAT ASCII;')
-	def startSerial(self, COM, baud):
-		self.ser = serial.Serial(COM, baud)
 	def setTrigger(self, trig):
 		if (trig==0):
 			self.ser.write(b'AUTO;')
@@ -345,21 +344,3 @@ class hp():
 		self.ser.write(b'NPLC?;')
 		self.NPLC = self.ser.readline()
 		return self.NPLC
-		
-		
-		
-# while True:
-	# writePoint(ser.readline())
-	# time.sleep(1)
-
-#Test it
-"""
-getOffset("dcv", 15.036e-3, '1', '6.5')
-getOffset("dci", 15.036e-3, '1', '6.5')
-getOffset("ohms4", 15.036e3, '1', '6.5')
-getOffset("ohms2", 15.036e3, '1', '6.5')
-getOffset("acv", 15.036, '1', '6.5')
-getOffset("acdcv", 15.036, '1', '6.5')
-getOffset("aci", 15.036, '1', '6.5')
-getOffset("acdci", 15.036, '1', '6.5')
-getOffset("freq", 15036, '1', '6.5')"""

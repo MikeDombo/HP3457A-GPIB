@@ -15,27 +15,9 @@ from pylab import get_current_fig_manager as gcfm
 import HP_3457A
 import csv
 import math
-hp = HP_3457A.hp("COM6")
 
-class DataGen(object):
-	def __init__(self, init=50):
-		self.data = self.init = init
-		
-	def next(self):
-		self._recalc_data()
-		return self.data
-	
-	def _recalc_data(self):
-		delta = random.uniform(-0.5, 0.5)
-		r = random.random()
-		if r > 0.9:
-			self.data += delta * 15
-		elif r > 0.8: 
-			delta += (0.5 if self.init > self.data else -0.5)
-			self.data += delta
-		else:
-			self.data += delta
-			
+global hp
+
 class dataval(object):
 	def __init__(self):
 		self.minnum = sys.maxint
@@ -200,14 +182,22 @@ class offsetBox(wx.Panel):
 
 class GraphFrame(wx.Frame):
 	title = 'HP/Agilent 3457A Multimeter Panel'
+	def next(self):
+		global hp
+		try:
+			hp
+		except NameError:
+			self.setCom()
+			return hp.measure()
+		else:
+			return hp.measure()
 	def __init__(self):
 		wx.Frame.__init__(self, None, -1, self.title)
-		
-		self.datagen = DataGen()
-		add = self.datagen.next()
+		add = self.next()
 		self.dataval = dataval()
 		self.dataval.add(add)
 		self.data = [add]
+		
 		self.paused = False
 		
 		self.create_menu()
@@ -215,11 +205,10 @@ class GraphFrame(wx.Frame):
 		
 		self.redraw_timer = wx.Timer(self)
 		self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)        
-		self.redraw_timer.Start(0)
+		self.redraw_timer.Start(100)
 
 	def create_menu(self):
 		self.menubar = wx.MenuBar()
-		
 		menu_file = wx.Menu()
 		m_expt = menu_file.Append(-1, "&Save plot\tCtrl-S", "Save plot to file")
 		self.Bind(wx.EVT_MENU, self.on_save_plot, m_expt)
@@ -227,6 +216,11 @@ class GraphFrame(wx.Frame):
 		m_exit = menu_file.Append(-1, "E&xit\tCtrl-X", "Exit")
 		self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 		self.menubar.Append(menu_file, "&File")
+		
+		menu_set = wx.Menu()
+		self.Bind(wx.EVT_MENU, self.setCom(), menu_set.Append(-1, "Serial Ports"))
+		
+		self.menubar.Append(menu_set, "&Settings")
 		self.SetMenuBar(self.menubar)
 	
 	def create_main_panel(self):
@@ -405,6 +399,7 @@ class GraphFrame(wx.Frame):
 		self.plot_data.set_ydata(np.array(self.data))
 		
 		if len(self.data)>1:
+			global hp
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen()-1])[0])[0:8]+" "+Units().convert(self.data[self.dataval.getlen()-1])[1]+self.Mode[2])
 			offset = hp.getOffset(self.Mode[3],self.data[self.dataval.getlen()-1])
 			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen()-1]+offset)[0])[0:8]+" "+Units().convert(self.data[self.dataval.getlen()-1]+offset)[1]+self.Mode[2])
@@ -468,7 +463,7 @@ class GraphFrame(wx.Frame):
 			self.Mode = ["Period", "Seconds", "s", "per"]
 		if(mode==9):
 			self.Mode = ["Frequency", "Hertz", "Hz", "freq"]
-		#hp.setMeasure(self.Mode[3])
+		hp.setMeasure(self.Mode[3])
 		
 	def on_update_pause_button(self, event):
 		label = "Resume" if self.paused else "Pause"
@@ -499,10 +494,18 @@ class GraphFrame(wx.Frame):
 				
 	def on_redraw_timer(self, event):
 		if not self.paused:
-			add = self.datagen.next()
+			add = self.next()
 			self.dataval.add(add)
 			self.data.append(add)
 		self.draw_plot()
+	
+	def setCom(self):
+		global hp
+		dlg = wx.TextEntryDialog(self, "What is the serial port?", defaultValue="COM1")
+		dlg.ShowModal()
+		com = dlg.GetValue()
+		dlg.Destroy()
+		hp = HP_3457A.hp(com)
 	
 	def on_exit(self, event):
 		sys.exit(0)
@@ -549,8 +552,9 @@ class Units:
 			  17 : {'multiplier' : 10 ** 15, 'prefix' : 'P'},
 			  18 : {'multiplier' : 10 ** 18, 'prefix' : 'E'},
 			  }
-
 	def convert(self, number):
+		if number == 0:
+			return [number, '']
 		if number < 0:
 			negative = True
 		else:
@@ -567,7 +571,7 @@ class Units:
 			return [number / si[exponent]['multiplier'], si[exponent]['prefix']]
 		elif exponent == 0:
 			return [number, '']
-
+			
 if __name__ == '__main__':
 	app = wx.App(False)
 	app.frame = GraphFrame()
