@@ -13,6 +13,7 @@ class hp():
 		self.digits = '6.5'
 		"""self.ser = serial.Serial(com, 460800)
 		self.ser.write(b'+addr 22;')
+		self.ser.write(b'END ALWAYS;')
 		self.ser.write(b'OFORMAT ASCII;')"""
 		
 		
