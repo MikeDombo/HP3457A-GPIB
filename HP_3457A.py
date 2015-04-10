@@ -17,6 +17,7 @@ class hp():
 		self.ser.write(b'+addr 22;')
 		self.ser.write(b'END ALWAYS;')
 		self.ser.write(b'OFORMAT ASCII;')
+		self.ser.write(b'TRIG SYN;') #Set synchronous trigger so that it triggers when we ask it for data
 		
 		
 	def getOffset(self, unit, value):
