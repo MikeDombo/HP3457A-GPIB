@@ -190,20 +190,22 @@ class GraphFrame(wx.Frame):
 			self.setCom()
 			return hp.measure()
 		else:
+			print("measuring")
 			return hp.measure()
 
 	def __init__(self):
 		wx.Frame.__init__(self, None, -1, self.title)
+		self.paused = False
+		
+		print("getting first datapoint")
 		add = self.next()
 		self.dataval = dataval()
 		self.dataval.add(add)
 		self.data = [add]
-
-		self.paused = False
-
+		
 		self.create_menu()
 		self.create_main_panel()
-
+		
 		self.redraw_timer = wx.Timer(self)
 		self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
 		self.redraw_timer.Start(100)
@@ -219,8 +221,8 @@ class GraphFrame(wx.Frame):
 		self.menubar.Append(menu_file, "&File")
 
 		menu_set = wx.Menu()
-		self.Bind(wx.EVT_MENU, self.setCom(), menu_set.Append(-1, "Serial Ports"))
-
+		m_ser = menu_set.Append(-1, "Serial Ports", "Set serial port")
+		self.Bind(wx.EVT_MENU, self.setCom, m_ser)
 		self.menubar.Append(menu_set, "&Settings")
 		self.SetMenuBar(self.menubar)
 

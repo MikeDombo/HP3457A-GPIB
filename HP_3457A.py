@@ -424,8 +424,7 @@ class hp():
 				acdciAcc = acdciLoAcc
 			return ((value * acdciAcc[freq][plc]['acc']) + aciRes[range][digit] * acdciAcc[freq][plc]['counts'])
 		elif (unit == "freq"):
-			freq = self.getFrequency()
-			if (freq < 400):
+			if (value < 400):
 				range = '10'
 			else:
 				range = '400'
