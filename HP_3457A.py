@@ -17,7 +17,8 @@ class hp():
 		self.ser.write(b'+addr 22\r\n')
 		print("Asking for ID")
 		self.ser.write(b'ID?\r\n')
-		print(self.ser.readline())
+		while self.ser.isWaiting()>1:
+			print(self.ser.readline())
 		print("Writing END ALWAYS")
 		self.ser.write(b'END ALWAYS\r\n')
 		print("Writing OFORMAT ASCII")
@@ -455,9 +456,9 @@ class hp():
 			print("Reading Serial Line")
 			value = self.ser.readline()
 			self.ser.write(b'RMATH HIRES\r\n')
-			return value + self.ser.readline()
+			return float(value) + float(self.ser.readline())
 		print("Reading serial line")
-		return self.ser.readline()
+		return float(self.ser.readline())
 
 	def getPlc(self):
 		if self.gotPlc:
