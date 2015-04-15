@@ -451,7 +451,7 @@ class hp():
 	def measure(self):
 		self.ser.flushInput()
 		print("Trying to get measurement")
-		#self.ser.write(b'TRIG SGL\r\n')
+		self.ser.write(b'TRIG SGL\r\n')
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
 			value = self.ser.readline()
@@ -459,10 +459,14 @@ class hp():
 			self.ser.write(b'RMATH HIRES\r\n')
 			hire = self.ser.readline()
 			print(hire)
+			while inWaiting()>0:
+				print(self.ser.readline())
 			return float(value) + float(hire)
 		print("Reading serial line")
 		value = self.ser.readline()
 		print(value)
+		while inWaiting()>0:
+				print(self.ser.readline())
 		return float(value)
 
 	def getPlc(self):
