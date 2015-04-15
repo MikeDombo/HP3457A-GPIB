@@ -15,19 +15,19 @@ class hp():
 		self.ser = serial.Serial(com, 460800, timeout=3)
 		raw_input("press enter to continue END ALWAYS")
 		print("Writing +addr 22")
-		self.ser.write(b'+addr 22\r\n')
+		self.ser.write(b'+addr 22\r')
 		print("Asking for ID")
-		self.ser.write(b'ID?\r\n')
-		print(self.ser.readline())
+		self.ser.write(b'ID?\r')
+		print(self.read())
 		raw_input("press enter to continue END ALWAYS")
 		print("Writing END ALWAYS")
-		self.ser.write(b'END ALWAYS\r\n')
+		self.ser.write(b'END ALWAYS\r')
 		raw_input("press enter to continue OFORMAT ASCII")
 		print("Writing OFORMAT ASCII")
-		self.ser.write(b'OFORMAT ASCII\r\n')
+		self.ser.write(b'OFORMAT ASCII\r')
 		raw_input("press enter to continue TRIG SYN")
 		print("Writing TRIG SYN")
-		self.ser.write(b'TRIG SYN\r\n')  # Set synchronous trigger so that it triggers when we ask it for data
+		self.ser.write(b'TRIG SYN\r')  # Set synchronous trigger so that it triggers when we ask it for data
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -451,27 +451,31 @@ class hp():
 		freq = self.measure()
 		self.setMeasure(units)
 		return freq
-
+		
+	def read(self):
+		self.ser.write(b'+read')
+		return self.read()
+		
 	def measure(self):
 		self.ser.flushInput()
 		print("Trying to get measurement")
 		raw_input("press enter to continue TRIG SGL")
-		self.ser.write(b'TRIG SGL\r\n')
+		self.ser.write(b'TRIG SGL\r')
 		if float(self.digits) > 6.5:
-			print("Reading Serial Line")
-			value = self.ser.readline()
+			print("Reading Serial Line1")
+			value = self.read()
 			print(value)
-			self.ser.write(b'RMATH HIRES\r\n')
-			hire = self.ser.readline()
+			self.ser.write(b'RMATH HIRES\r')
+			hire = self.read()
 			print(hire)
 			while self.ser.inWaiting()>0:
-				print(self.ser.readline())
+				print(self.read())
 			return float(value) + float(hire)
-		print("Reading serial line")
-		value = self.ser.readline()
+		print("Reading serial line2")
+		value = self.read()
 		print(value)
 		while self.ser.inWaiting()>0:
-				print(self.ser.readline())
+				print(self.read())
 		return float(value)
 
 	def getPlc(self):
@@ -479,9 +483,9 @@ class hp():
 			return self.plc
 		else:
 			print("Writing NPLC?")
-			self.ser.write(b'NPLC?\r\n')
+			self.ser.write(b'NPLC?\r')
 			print("Reading NPLC? answer")
-			self.plc = self.ser.readline()
+			self.plc = self.read()
 			self.gotPlc = True
 			return self.plc
 
@@ -490,7 +494,7 @@ class hp():
 			return self.digits
 		else:
 			self.ser.write(b'NPLC?')
-			self.digits = self.ser.readline()
+			self.digits = self.read()
 			if float(self.digits) <= .0005:
 				self.digits = '3.5'
 			elif float(self.digits) <= .005:
@@ -536,5 +540,5 @@ class hp():
 
 	def getNPLC(self):
 		self.ser.write(b'NPLC?')
-		self.NPLC = self.ser.readline()
+		self.NPLC = self.read()
 		return self.NPLC
