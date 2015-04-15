@@ -14,8 +14,8 @@ class hp():
 		self.digits = '6.5'
 		self.ser = serial.Serial(com, 460800, timeout=3)
 		raw_input("press enter to continue END ALWAYS")
-		print("Writing +addr 22")
-		self.ser.write(b'+addr 22\r')
+		print("Writing ++addr 22")
+		self.ser.write(b'++addr 22\r')
 		print("Asking for ID")
 		self.ser.write(b'ID?\r')
 		print(self.read())
@@ -453,7 +453,7 @@ class hp():
 		return freq
 		
 	def read(self):
-		self.ser.write(b'+read')
+		self.ser.write(b'++read')
 		return self.ser.readline()
 		
 	def measure(self):
