@@ -17,8 +17,7 @@ class hp():
 		self.ser.write(b'+addr 22\r\n')
 		print("Asking for ID")
 		self.ser.write(b'ID?\r\n')
-		while self.ser.isWaiting()>1:
-			print(self.ser.readline())
+		print(self.ser.readline())
 		print("Writing END ALWAYS")
 		self.ser.write(b'END ALWAYS\r\n')
 		print("Writing OFORMAT ASCII")
@@ -450,8 +449,9 @@ class hp():
 		return freq
 
 	def measure(self):
+		self.ser.flushInput()
 		print("Trying to get measurement")
-		self.ser.write(b'TRIG SGL\r\n')
+		#self.ser.write(b'TRIG SGL\r\n')
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
 			value = self.ser.readline()
