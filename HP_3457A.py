@@ -459,13 +459,13 @@ class hp():
 			self.ser.write(b'RMATH HIRES\r\n')
 			hire = self.ser.readline()
 			print(hire)
-			while inWaiting()>0:
+			while self.ser.inWaiting()>0:
 				print(self.ser.readline())
 			return float(value) + float(hire)
 		print("Reading serial line")
 		value = self.ser.readline()
 		print(value)
-		while inWaiting()>0:
+		while self.ser.inWaiting()>0:
 				print(self.ser.readline())
 		return float(value)
 
