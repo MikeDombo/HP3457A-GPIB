@@ -13,10 +13,14 @@ class hp():
 		self.plc = 10
 		self.digits = '6.5'
 		self.ser = serial.Serial(com, 460800)
-		self.ser.write(b'+addr 22')
-		self.ser.write(b'END ALWAYS;')
-		self.ser.write(b'OFORMAT ASCII;')
-		self.ser.write(b'TRIG SYN;')  # Set synchronous trigger so that it triggers when we ask it for data
+		print("Writing +addr 22")
+		self.ser.write(b'+addr 22\n')
+		print("Writing END ALWAYS")
+		self.ser.write(b'END ALWAYS;\n')
+		print("Writing OFORMAT ASCII")
+		self.ser.write(b'OFORMAT ASCII;\n')
+		print("Writing TRIG SYN")
+		self.ser.write(b'TRIG SYN;\n')  # Set synchronous trigger so that it triggers when we ask it for data
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -443,17 +447,22 @@ class hp():
 		return freq
 
 	def measure(self):
+		print("Trying to get measurement")
 		if float(self.digits) > 6.5:
+			print("Reading Serial Line")
 			value = self.ser.readline()
 			self.ser.write(b'RMATH HIRES;')
 			return value + self.ser.readline()
+		print("Reading serial line")
 		return self.ser.readline()
 
 	def getPlc(self):
 		if self.gotPlc:
 			return self.plc
 		else:
-			self.ser.write(b'NPLC?')
+			print("Writing NPLC?")
+			self.ser.write(b'NPLC?\n')
+			print("Reading NPLC? answer")
 			self.plc = self.ser.readline()
 			self.gotPlc = True
 			return self.plc
