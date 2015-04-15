@@ -454,7 +454,7 @@ class hp():
 		
 	def read(self):
 		self.ser.write(b'+read')
-		return self.read()
+		return self.ser.readline()
 		
 	def measure(self):
 		self.ser.flushInput()
