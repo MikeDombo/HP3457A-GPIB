@@ -13,15 +13,19 @@ class hp():
 		self.plc = 10
 		self.digits = '6.5'
 		self.ser = serial.Serial(com, 460800, timeout=3)
+		raw_input("press enter to continue END ALWAYS")
 		print("Writing +addr 22")
 		self.ser.write(b'+addr 22\r\n')
 		print("Asking for ID")
 		self.ser.write(b'ID?\r\n')
 		print(self.ser.readline())
+		raw_input("press enter to continue END ALWAYS")
 		print("Writing END ALWAYS")
 		self.ser.write(b'END ALWAYS\r\n')
+		raw_input("press enter to continue OFORMAT ASCII")
 		print("Writing OFORMAT ASCII")
 		self.ser.write(b'OFORMAT ASCII\r\n')
+		raw_input("press enter to continue TRIG SYN")
 		print("Writing TRIG SYN")
 		self.ser.write(b'TRIG SYN\r\n')  # Set synchronous trigger so that it triggers when we ask it for data
 
@@ -451,6 +455,7 @@ class hp():
 	def measure(self):
 		self.ser.flushInput()
 		print("Trying to get measurement")
+		raw_input("press enter to continue TRIG SGL")
 		self.ser.write(b'TRIG SGL\r\n')
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
