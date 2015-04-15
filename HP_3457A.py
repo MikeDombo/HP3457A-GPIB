@@ -455,10 +455,15 @@ class hp():
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
 			value = self.ser.readline()
+			print(value)
 			self.ser.write(b'RMATH HIRES\r\n')
-			return float(value) + float(self.ser.readline())
+			hire = self.ser.readline()
+			print(hire)
+			return float(value) + float(hire)
 		print("Reading serial line")
-		return float(self.ser.readline())
+		value = self.ser.readline()
+		print(value)
+		return float(value)
 
 	def getPlc(self):
 		if self.gotPlc:
