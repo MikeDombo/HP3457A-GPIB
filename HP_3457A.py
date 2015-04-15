@@ -450,10 +450,11 @@ class hp():
 
 	def measure(self):
 		print("Trying to get measurement")
+		self.ser.write(b'TRIG SGL\r\n')
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
 			value = self.ser.readline()
-			self.ser.write(b'RMATH HIRES')
+			self.ser.write(b'RMATH HIRES\r\n')
 			return value + self.ser.readline()
 		print("Reading serial line")
 		return self.ser.readline()
