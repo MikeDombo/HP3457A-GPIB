@@ -12,15 +12,15 @@ class hp():
 		self.gotDigits = False
 		self.plc = 10
 		self.digits = '6.5'
-		self.ser = serial.Serial(com, 460800)
+		self.ser = serial.Serial(com, 460800, timeout=3)
 		print("Writing +addr 22")
-		self.ser.write(b'+addr 22\n')
+		self.ser.write(b'+addr 22\r\n')
 		print("Writing END ALWAYS")
-		self.ser.write(b'END ALWAYS;\n')
+		self.ser.write(b'END ALWAYS\r\n')
 		print("Writing OFORMAT ASCII")
-		self.ser.write(b'OFORMAT ASCII;\n')
+		self.ser.write(b'OFORMAT ASCII\r\n')
 		print("Writing TRIG SYN")
-		self.ser.write(b'TRIG SYN;\n')  # Set synchronous trigger so that it triggers when we ask it for data
+		self.ser.write(b'TRIG SYN\r\n')  # Set synchronous trigger so that it triggers when we ask it for data
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -450,7 +450,7 @@ class hp():
 		if float(self.digits) > 6.5:
 			print("Reading Serial Line")
 			value = self.ser.readline()
-			self.ser.write(b'RMATH HIRES;')
+			self.ser.write(b'RMATH HIRES')
 			return value + self.ser.readline()
 		print("Reading serial line")
 		return self.ser.readline()
@@ -460,7 +460,7 @@ class hp():
 			return self.plc
 		else:
 			print("Writing NPLC?")
-			self.ser.write(b'NPLC?\n')
+			self.ser.write(b'NPLC?\r\n')
 			print("Reading NPLC? answer")
 			self.plc = self.ser.readline()
 			self.gotPlc = True
@@ -491,31 +491,31 @@ class hp():
 		global unit
 		unit = units
 		if (unit == "dcv"):
-			self.ser.write(b'F10;')
+			self.ser.write(b'F10')
 		elif (unit == "dci"):
-			self.ser.write(b'DCI;')
+			self.ser.write(b'DCI')
 		elif (unit == "ohms2"):
-			self.ser.write(b'F40;')
+			self.ser.write(b'F40')
 		elif (unit == "ohms4"):
-			self.ser.write(b'F50;')
+			self.ser.write(b'F50')
 		elif (unit == "acv"):
-			self.ser.write(b'ACV;')
+			self.ser.write(b'ACV')
 		elif (unit == "acdcv"):
-			self.ser.write(b'ACDCV;')
+			self.ser.write(b'ACDCV')
 		elif (unit == "aci"):
-			self.ser.write(b'ACI;')
+			self.ser.write(b'ACI')
 		elif (unit == "acdci"):
-			self.ser.write(b'ACDCI;')
+			self.ser.write(b'ACDCI')
 		elif (unit == "freq"):
-			self.ser.write(b'FREQ;')
+			self.ser.write(b'FREQ')
 		elif (unit == "per"):
-			self.ser.write(b'PER;')
+			self.ser.write(b'PER')
 
 	def setGPIBAddr(self, addr):
 		self.ser.write(b'+addr ' + addr)
-		self.ser.write(b'OFORMAT ASCII;')
+		self.ser.write(b'OFORMAT ASCII')
 
 	def getNPLC(self):
-		self.ser.write(b'NPLC?;')
+		self.ser.write(b'NPLC?')
 		self.NPLC = self.ser.readline()
 		return self.NPLC
