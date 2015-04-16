@@ -16,12 +16,12 @@ class hp():
 		raw_input("press enter to continue END ALWAYS")
 		print("Writing ++addr 22")
 		self.ser.write(b'++addr 22\r')
-		print("Asking for ID")
-		self.ser.write(b'ID?\r')
-		print(self.read())
 		raw_input("press enter to continue END ALWAYS")
 		print("Writing END ALWAYS")
 		self.ser.write(b'END ALWAYS\r')
+		print("Asking for ID")
+		self.ser.write(b'ID?\r')
+		print(self.read())
 		raw_input("press enter to continue OFORMAT ASCII")
 		print("Writing OFORMAT ASCII")
 		self.ser.write(b'OFORMAT ASCII\r')
@@ -453,7 +453,7 @@ class hp():
 		return freq
 		
 	def read(self):
-		self.ser.write(b'++read')
+		self.ser.write(b'++read eoi')
 		return self.ser.readline()
 		
 	def measure(self):
