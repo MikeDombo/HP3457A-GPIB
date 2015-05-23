@@ -1,5 +1,7 @@
 import serial
-
+import string
+import time
+from datetime import datetime
 global unit
 
 
@@ -9,30 +11,25 @@ class hp():
 
 	def __init__(self, com):
 		self.gotPlc = False
-		self.gotDigits = False
 		self.plc = 10
 		self.digits = '6.5'
-		self.ser = serial.Serial(com, 460800, timeout=3)
-		raw_input("press enter to continue END ALWAYS")
-		print("Writing ++addr 22")
-		self.ser.write(b'++addr 22\r')
-		raw_input("press enter to continue END ALWAYS")
-		print("Writing END ALWAYS")
-		self.ser.write(b'END ALWAYS\r')
-		print("Asking for ID")
-		self.ser.write(b'ID?\r')
+		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=.5)
+		self.ser.write(b'++rst\r\n')
+		time.sleep(2)
+		self.ser.write(b'++addr 22\r\n')
+		self.ser.write(b'++eoi 0\r\n')
+		self.ser.write(b'++eos 0\r\n')
+		self.ser.write(b'END ALWAYS;\r\n')
+		self.ser.write(b'BEEP 0;\r\n')
+		self.ser.write(b'ID?\r\n')
 		print(self.read())
-		raw_input("press enter to continue OFORMAT ASCII")
-		print("Writing OFORMAT ASCII")
-		self.ser.write(b'OFORMAT ASCII\r')
-		raw_input("press enter to continue TRIG SYN")
-		print("Writing TRIG SYN")
-		self.ser.write(b'TRIG SYN\r')  # Set synchronous trigger so that it triggers when we ask it for data
+		self.ser.write(b'TRIG AUTO;\r\n') 
+		self.ser.write(b'DCV;\r\n') 
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
 		plc = str(self.getPlc())
-		if float(plc) > 1:
+		if float(plc) >= 1:
 			plc = "1"
 		if float(digit) > 6.5:
 			digit = '6.5'
@@ -326,7 +323,7 @@ class hp():
 			return ((value * ohms4Acc[range][plc]['acc']) + ohmsRes[range][digit] * ohms4Acc[range][plc]['counts'])
 		elif (unit == "acv"):
 			if (float(plc) > 1): plc = '1'
-			freq = self.getFrequency()
+			freq = 60 #needs to be fixed
 			if (freq < 45):
 				freq = '20'
 			elif (freq < 100):
@@ -356,7 +353,7 @@ class hp():
 			return ((value * acvAcc[freq][plc]['acc']) + acvRes[range][digit] * acvAcc[freq][plc]['counts'])
 		elif (unit == "acdcv"):
 			if (float(plc) > 1): plc = '1'
-			freq = self.getFrequency()
+			freq = 60 #needs to be fixed
 			if (freq < 45):
 				freq = '20'
 			elif (freq < 100):
@@ -386,7 +383,7 @@ class hp():
 			return ((value * acdcvAcc[freq][plc]['acc']) + acvRes[range][digit] * acdcvAcc[freq][plc]['counts'])
 		elif (unit == "aci"):
 			if (float(plc) > 1): plc = '1'
-			freq = self.getFrequency()
+			freq = 60 #needs to be fixed
 			if (freq < 45):
 				freq = '20'
 			elif (freq < 100):
@@ -409,7 +406,7 @@ class hp():
 			return ((value * aciAcc[freq][plc]['acc']) + aciRes[range][digit] * aciAcc[freq][plc]['counts'])
 		elif (unit == "acdci"):
 			if (float(plc) > 1): plc = '1'
-			freq = self.getFrequency()
+			freq = 60 #needs to be fixed
 			if (freq < 45):
 				freq = '20'
 			elif (freq < 100):
@@ -453,92 +450,87 @@ class hp():
 		return freq
 		
 	def read(self):
-		self.ser.write(b'++read eoi')
-		return self.ser.readline()
+		self.ser.write(b'?\r\n')
+		return string.rstrip(self.ser.readline(), '\r\n')
 		
 	def measure(self):
-		self.ser.flushInput()
-		print("Trying to get measurement")
-		raw_input("press enter to continue TRIG SGL")
-		self.ser.write(b'TRIG SGL\r')
-		if float(self.digits) > 6.5:
-			print("Reading Serial Line1")
+		if float(self.getDigits()) > 6.5:
 			value = self.read()
-			print(value)
-			self.ser.write(b'RMATH HIRES\r')
-			hire = self.read()
-			print(hire)
-			while self.ser.inWaiting()>0:
-				print(self.read())
-			return float(value) + float(hire)
-		print("Reading serial line2")
-		value = self.read()
-		print(value)
-		while self.ser.inWaiting()>0:
-				print(self.read())
-		return float(value)
+			print str(value)  +" big plc"
+			self.ser.write(b'RMATH HIRES;\r\n')
+			self.ser.write(b'?\r\n')
+			hire = string.rstrip(self.ser.readline(), '\r\n')
+			print str(hire) + " hires"
+			try:
+				float(value)
+				float(hire)
+				return float(value) + float(hire)
+			except ValueError:
+				time.sleep(.01)
+				return self.measure()
+		else:
+			a = datetime.now()
+			value = self.read()
+			print str(value) +" small plc"
+			try:
+				float(value)
+				return float(value)
+			except ValueError:
+				time.sleep(.01)
+				return self.measure()
+			
 
 	def getPlc(self):
 		if self.gotPlc:
 			return self.plc
 		else:
-			print("Writing NPLC?")
-			self.ser.write(b'NPLC?\r')
-			print("Reading NPLC? answer")
-			self.plc = self.read()
-			self.gotPlc = True
-			return self.plc
+			self.ser.write(b'NPLC?\r\n')
+			self.plc = string.rstrip(self.ser.readline(), '\r\n')[1:]
+			try:
+				self.plc = float(self.plc)
+				self.gotPlc = True
+				return self.plc
+			except:
+				time.sleep(.01)
+				return self.getPlc()
+			
 
 	def getDigits(self):
-		if self.gotDigits:
-			return self.digits
-		else:
-			self.ser.write(b'NPLC?')
-			self.digits = self.read()
-			if float(self.digits) <= .0005:
-				self.digits = '3.5'
-			elif float(self.digits) <= .005:
-				self.digits = '4.5'
-			elif float(self.digits) <= .1:
-				self.digits = '5.5'
-			elif float(self.digits) <= 1:
-				self.digits = '6.5'
-			elif float(self.digits) <= 10:
-				self.digits = '7.5'
-			elif float(self.digits) <= 100:
-				self.digits = '7.5'
-			self.gotDigits = True
-			return self.digits
+		self.digits = self.getPlc()
+		if float(self.digits) <= .0005:
+			self.digits = '3.5'
+		elif float(self.digits) <= .005:
+			self.digits = '4.5'
+		elif float(self.digits) <= .1:
+			self.digits = '5.5'
+		elif float(self.digits) <= 1:
+			self.digits = '6.5'
+		elif float(self.digits) <= 10:
+			self.digits = '7.5'
+		elif float(self.digits) <= 100:
+			self.digits = '7.5'
+		return self.digits
 
 	def setMeasure(self, units):
 		global unit
 		unit = units
 		if (unit == "dcv"):
-			self.ser.write(b'F10')
+			self.ser.write(b'F10;\r\n')
 		elif (unit == "dci"):
-			self.ser.write(b'DCI')
+			self.ser.write(b'DCI;\r\n')
 		elif (unit == "ohms2"):
-			self.ser.write(b'F40')
+			self.ser.write(b'F40;\r\n')
 		elif (unit == "ohms4"):
-			self.ser.write(b'F50')
+			self.ser.write(b'F50;\r\n')
 		elif (unit == "acv"):
-			self.ser.write(b'ACV')
+			self.ser.write(b'ACV;\r\n')
 		elif (unit == "acdcv"):
-			self.ser.write(b'ACDCV')
+			self.ser.write(b'ACDCV;\r\n')
 		elif (unit == "aci"):
-			self.ser.write(b'ACI')
+			self.ser.write(b'ACI;\r\n')
 		elif (unit == "acdci"):
-			self.ser.write(b'ACDCI')
+			self.ser.write(b'ACDCI;\r\n')
 		elif (unit == "freq"):
-			self.ser.write(b'FREQ')
+			self.ser.write(b'FREQ;\r\n')
 		elif (unit == "per"):
-			self.ser.write(b'PER')
-
-	def setGPIBAddr(self, addr):
-		self.ser.write(b'+addr ' + addr)
-		self.ser.write(b'OFORMAT ASCII')
-
-	def getNPLC(self):
-		self.ser.write(b'NPLC?')
-		self.NPLC = self.read()
-		return self.NPLC
+			self.ser.write(b'PER;\r\n')

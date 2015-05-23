@@ -3,6 +3,7 @@ import pprint
 import sys
 import wx
 import matplotlib
+from datetime import datetime
 
 matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
@@ -27,6 +28,10 @@ class dataval(object):
 		self.avg = 0
 
 	def add(self, val):
+		try:
+			float(val)
+		except:
+			print str(val) + " is not a float!"
 		if val < self.minnum:
 			self.minnum = val
 		if val > self.maxnum:
@@ -190,15 +195,14 @@ class GraphFrame(wx.Frame):
 			self.setCom()
 			return hp.measure()
 		else:
-			print("measuring")
 			return hp.measure()
 
 	def __init__(self):
 		wx.Frame.__init__(self, None, -1, self.title)
 		self.paused = False
-		
-		print("getting first datapoint")
+		a = datetime.now()
 		add = self.next()
+		print str(datetime.now() -a)
 		self.dataval = dataval()
 		self.dataval.add(add)
 		self.data = [add]
@@ -403,7 +407,7 @@ class GraphFrame(wx.Frame):
 
 		if len(self.data) > 1:
 			global hp
-			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
+			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
 			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
 			self.lowerLim.SetValue(str(self.data[self.dataval.getlen() - 1] - offset)[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
@@ -412,7 +416,7 @@ class GraphFrame(wx.Frame):
 			self.max.SetValue(str(max1[0])[0:8] + " " + max1[1] + self.Mode[2])
 			self.min.SetValue(str(min1[0])[0:8] + " " + min1[1] + self.Mode[2])
 			avg = Units().convert(self.dataval.getavg())
-			self.avg.SetValue(str(avg[0])[0:8] + " " + avg[1] + self.Mode[2])
+			self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
 			self.samps.SetValue(str(self.dataval.getlen()))
 			std = Units().convert(self.dataval.getstd(self.data))
 			self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
