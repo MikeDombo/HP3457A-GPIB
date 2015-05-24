@@ -58,6 +58,11 @@ class dataval(object):
 			diffsquared = (val - self.avg) ** 2
 			sum_diffsquared = diffsquared + sum_diffsquared
 		return (sum_diffsquared / self.len) ** (.5)
+	def clear(self):
+		self.minnum = sys.maxint
+		self.maxnum = -sys.maxint + 1
+		self.len = 0
+		self.avg = 0
 
 
 class BoundControlBox(wx.Panel):
@@ -200,9 +205,7 @@ class GraphFrame(wx.Frame):
 	def __init__(self):
 		wx.Frame.__init__(self, None, -1, self.title)
 		self.paused = False
-		a = datetime.now()
 		add = self.next()
-		print str(datetime.now() -a)
 		self.dataval = dataval()
 		self.dataval.add(add)
 		self.data = [add]
@@ -212,7 +215,7 @@ class GraphFrame(wx.Frame):
 		
 		self.redraw_timer = wx.Timer(self)
 		self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
-		self.redraw_timer.Start(100)
+		self.redraw_timer.Start((float(hp.getPlc())/60)*2)
 
 	def create_menu(self):
 		self.menubar = wx.MenuBar()
@@ -405,7 +408,7 @@ class GraphFrame(wx.Frame):
 		self.plot_data.set_xdata(np.arange(self.dataval.getlen()))
 		self.plot_data.set_ydata(np.array(self.data))
 
-		if len(self.data) > 1:
+		if self.dataval.getlen() > 1:
 			global hp
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
@@ -447,6 +450,7 @@ class GraphFrame(wx.Frame):
 
 	def clear_data(self, event):
 		self.data = []
+		self.dataval.clear()
 
 	def setMode(self, event):
 		mode = event.GetId()
@@ -504,7 +508,7 @@ class GraphFrame(wx.Frame):
 			add = self.next()
 			self.dataval.add(add)
 			self.data.append(add)
-		self.draw_plot()
+			self.draw_plot()
 
 	def setCom(self):
 		global hp

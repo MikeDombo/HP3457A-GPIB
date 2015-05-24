@@ -13,18 +13,18 @@ class hp():
 		self.gotPlc = False
 		self.plc = 10
 		self.digits = '6.5'
-		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=.5)
-		self.ser.write(b'++rst\r\n')
+		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1)
+		self.ser.write('++rst\r\n')
 		time.sleep(2)
-		self.ser.write(b'++addr 22\r\n')
-		self.ser.write(b'++eoi 0\r\n')
-		self.ser.write(b'++eos 0\r\n')
-		self.ser.write(b'END ALWAYS;\r\n')
-		self.ser.write(b'BEEP 0;\r\n')
-		self.ser.write(b'ID?\r\n')
-		print(self.read())
-		self.ser.write(b'TRIG AUTO;\r\n') 
-		self.ser.write(b'DCV;\r\n') 
+		self.ser.write('++addr 22\r\n')
+		self.ser.write('++eoi 0\r\n')
+		self.ser.write('++eos 0\r\n')
+		#self.ser.write('END ALWAYS;')
+		self.ser.write('BEEP 0;')
+		self.ser.write('ID?\r\n')
+		print(self.ser.readline())
+		self.ser.write('DCV;') 
+		self.ser.write('TRIG HOLD;')
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -450,15 +450,19 @@ class hp():
 		return freq
 		
 	def read(self):
-		self.ser.write(b'?\r\n')
+		self.ser.flushInput()
+		self.ser.write('TRIG SGL\r\n')
+		self.ser.write('++read\r\n')
+		time.sleep((float(self.plc)/60))
 		return string.rstrip(self.ser.readline(), '\r\n')
 		
 	def measure(self):
 		if float(self.getDigits()) > 6.5:
 			value = self.read()
 			print str(value)  +" big plc"
-			self.ser.write(b'RMATH HIRES;\r\n')
-			self.ser.write(b'?\r\n')
+			self.ser.flushInput()
+			self.ser.write('RMATH HIRES\r\n')
+			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.ser.readline(), '\r\n')
 			print str(hire) + " hires"
 			try:
@@ -484,11 +488,13 @@ class hp():
 		if self.gotPlc:
 			return self.plc
 		else:
-			self.ser.write(b'NPLC?\r\n')
+			self.ser.write('NPLC?\r')
 			self.plc = string.rstrip(self.ser.readline(), '\r\n')[1:]
+			print "asked for plc "+self.plc
 			try:
 				self.plc = float(self.plc)
 				self.gotPlc = True
+				self.ser.timeout = (float(self.plc)/60)*2
 				return self.plc
 			except:
 				time.sleep(.01)
