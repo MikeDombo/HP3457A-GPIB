@@ -405,13 +405,15 @@ class GraphFrame(wx.Frame):
 		else:
 			xmin = int(self.xmin_control.manual_value())
 		if self.ymin_control.is_auto():
-			ymin = int(min(self.data[xmin:xmax])) - 1
+			mins = min(self.data[xmin:xmax])
+			ymin = float(mins-(mins*.05))
 		else:
-			ymin = int(self.ymin_control.manual_value())
+			ymin = float(self.ymin_control.manual_value())
 		if self.ymax_control.is_auto():
-			ymax = int(max(self.data[xmin:xmax])) + 1
+			maxs = max(self.data[xmin:xmax])
+			ymax = float(maxs+(maxs*.05))
 		else:
-			ymax = (self.ymax_control.manual_value())
+			ymax = float(self.ymax_control.manual_value())
 		self.axes.set_xbound(lower=xmin, upper=xmax)
 		self.axes.set_ybound(lower=ymin, upper=ymax)
 		if self.cb_grid.IsChecked():
@@ -444,12 +446,12 @@ class GraphFrame(wx.Frame):
 			self.histo.clear()
 			if self.histo_width.manual_value()[1] or self.histo_width.manual_value()[2]:
 				if self.histo_width.manual_value()[1] and self.histo_width.manual_value()[0][0] != "" and self.histo_width.manual_value()[0][1] != "":
-					rng = (int(self.histo_width.manual_value()[0][0]), int(self.histo_width.manual_value()[0][1]))
+					rng = (float(self.histo_width.manual_value()[0][0]), float(self.histo_width.manual_value()[0][1]))
 					n, b, self.hist = self.histo.hist(self.data, bins=self.bin_control.manual_value(), histtype='stepfilled', color='b', range=rng)
 					self.histoMax.SetValue(str(b[np.where(n == n.max())][0])[0:8] + " " + self.Mode[2])
 				elif self.histo_width.manual_value()[2] and self.histo_width.manual_value()[0][0] != "" and self.histo_width.manual_value()[0][1] != "":
-					center = int(self.histo_width.manual_value()[0][0])
-					span = int(self.histo_width.manual_value()[0][1])
+					center = float(self.histo_width.manual_value()[0][0])
+					span = float(self.histo_width.manual_value()[0][1])
 					rng = (center - span, center + span)
 					n, b, self.hist = self.histo.hist(self.data, bins=self.bin_control.manual_value(), histtype='stepfilled', color='b', range=rng)
 					self.histoMax.SetValue(str(b[np.where(n == n.max())][0])[0:8] + " " + self.Mode[2])
@@ -541,12 +543,6 @@ class GraphFrame(wx.Frame):
 			writer = csv.writer(f)
 			for row in self.data:
 				writer.writerow([row])
-
-	""""def on_redraw_timer(self, event):
-		if not self.paused:
-			if not self.worker:
-				self.worker = Worker(self)
-				self.draw_plot()"""
 
 	def setCom(self):
 		global hp

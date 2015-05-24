@@ -1,1 +1,5 @@
+TODO:
+Add more settings
+
+DONE:
 Make measurement updates non render-blocking

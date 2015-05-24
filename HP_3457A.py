@@ -22,7 +22,8 @@ class hp():
 		#self.ser.write('END ALWAYS;')
 		self.ser.write('BEEP\r\n')
 		self.ser.write('ID?\r\n')
-		print(self.ser.readline())
+		if "HP3457" not in self.ser.readline():
+			print "check connections and settings"
 		self.ser.write('DCV\r\n') 
 		self.ser.write('TRIG HOLD\r\n')
 
@@ -463,13 +464,11 @@ class hp():
 	def measure(self):
 		if float(self.getDigits()) > 6.5:
 			value = self.read()
-			print str(value)  +" big plc"
 			self.ser.flushInput()
 			self.ser.write('RMATH HIRES\r\n')
 			time.sleep((float(self.plc)/60))
 			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.ser.readline(), '\r\n')
-			print str(hire) + " hires"
 			try:
 				float(value)
 				float(hire)
@@ -479,7 +478,6 @@ class hp():
 				return self.measure()
 		else:
 			value = self.read()
-			print str(value) +" small plc"
 			try:
 				float(value)
 				return float(value)
@@ -494,7 +492,6 @@ class hp():
 		else:
 			self.ser.write('NPLC?\r')
 			self.plc = string.rstrip(self.ser.readline(), '\r\n')[1:]
-			print "asked for plc "+self.plc
 			try:
 				self.plc = float(self.plc)
 				self.gotPlc = True
