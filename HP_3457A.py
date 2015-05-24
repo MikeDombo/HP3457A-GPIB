@@ -13,18 +13,18 @@ class hp():
 		self.gotPlc = False
 		self.plc = 10
 		self.digits = '6.5'
-		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1)
+		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=2)
 		self.ser.write('++rst\r\n')
 		time.sleep(2)
 		self.ser.write('++addr 22\r\n')
 		self.ser.write('++eoi 0\r\n')
 		self.ser.write('++eos 0\r\n')
 		#self.ser.write('END ALWAYS;')
-		self.ser.write('BEEP 0;')
+		self.ser.write('BEEP\r\n')
 		self.ser.write('ID?\r\n')
 		print(self.ser.readline())
-		self.ser.write('DCV;') 
-		self.ser.write('TRIG HOLD;')
+		self.ser.write('DCV\r\n') 
+		self.ser.write('TRIG HOLD\r\n')
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -451,10 +451,14 @@ class hp():
 		
 	def read(self):
 		self.ser.flushInput()
+		self.ser.flushOutput()
 		self.ser.write('TRIG SGL\r\n')
-		self.ser.write('++read\r\n')
 		time.sleep((float(self.plc)/60))
-		return string.rstrip(self.ser.readline(), '\r\n')
+		self.ser.flushInput()
+		self.ser.write('++read\r\n')
+		time.sleep(.01)
+		val = self.ser.readline()
+		return string.rstrip(val, '\r\n')
 		
 	def measure(self):
 		if float(self.getDigits()) > 6.5:
@@ -462,6 +466,7 @@ class hp():
 			print str(value)  +" big plc"
 			self.ser.flushInput()
 			self.ser.write('RMATH HIRES\r\n')
+			time.sleep((float(self.plc)/60))
 			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.ser.readline(), '\r\n')
 			print str(hire) + " hires"
@@ -470,10 +475,9 @@ class hp():
 				float(hire)
 				return float(value) + float(hire)
 			except ValueError:
-				time.sleep(.01)
+				time.sleep(.1)
 				return self.measure()
 		else:
-			a = datetime.now()
 			value = self.read()
 			print str(value) +" small plc"
 			try:
@@ -520,23 +524,28 @@ class hp():
 	def setMeasure(self, units):
 		global unit
 		unit = units
+		self.ser.flushInput()
+		self.ser.flushOutput()
 		if (unit == "dcv"):
-			self.ser.write(b'F10;\r\n')
+			self.ser.write('F10\r\n')
 		elif (unit == "dci"):
-			self.ser.write(b'DCI;\r\n')
+			self.ser.write('DCI\r\n')
 		elif (unit == "ohms2"):
-			self.ser.write(b'F40;\r\n')
+			self.ser.write('F40\r\n')
 		elif (unit == "ohms4"):
-			self.ser.write(b'F50;\r\n')
+			self.ser.write('F50\r\n')
 		elif (unit == "acv"):
-			self.ser.write(b'ACV;\r\n')
+			self.ser.write('ACV\r\n')
 		elif (unit == "acdcv"):
-			self.ser.write(b'ACDCV;\r\n')
+			self.ser.write('ACDCV\r\n')
 		elif (unit == "aci"):
-			self.ser.write(b'ACI;\r\n')
+			self.ser.write('ACI\r\n')
 		elif (unit == "acdci"):
-			self.ser.write(b'ACDCI;\r\n')
+			self.ser.write('ACDCI\r\n')
 		elif (unit == "freq"):
-			self.ser.write(b'FREQ;\r\n')
+			self.ser.write('FREQ\r\n')
 		elif (unit == "per"):
-			self.ser.write(b'PER;\r\n')
+			self.ser.write('PER\r\n')
+		time.sleep(1)
+		self.ser.flushInput()
+		self.ser.flushOutput()

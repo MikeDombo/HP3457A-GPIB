@@ -4,6 +4,7 @@ import sys
 import wx
 import matplotlib
 from datetime import datetime
+from threading import *
 
 matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
@@ -16,7 +17,7 @@ from pylab import get_current_fig_manager as gcfm
 import HP_3457A
 import csv
 import math
-
+import time
 global hp
 
 
@@ -64,7 +65,6 @@ class dataval(object):
 		self.len = 0
 		self.avg = 0
 
-
 class BoundControlBox(wx.Panel):
 	def __init__(self, parent, ID, label, initval):
 		wx.Panel.__init__(self, parent, ID)
@@ -100,7 +100,6 @@ class BoundControlBox(wx.Panel):
 
 	def manual_value(self):
 		return self.value
-
 
 class BinRangeBox(wx.Panel):
 	def __init__(self, parent, ID, label):
@@ -143,7 +142,6 @@ class BinRangeBox(wx.Panel):
 	def manual_value(self):
 		return [[self.manual_text_1.GetValue(), self.manual_text_2.GetValue()], self.radio_manual_range.GetValue(), self.radio_manual_span.GetValue()]
 
-
 class BinControlBox(wx.Panel):
 	def __init__(self, parent, ID, label, initval):
 		wx.Panel.__init__(self, parent, ID)
@@ -171,7 +169,6 @@ class BinControlBox(wx.Panel):
 	def manual_value(self):
 		return int(self.value)
 
-
 class offsetBox(wx.Panel):
 	def __init__(self, parent, ID, label):
 		wx.Panel.__init__(self, parent, ID)
@@ -188,34 +185,55 @@ class offsetBox(wx.Panel):
 	def SetValue(self, value):
 		self.manual_text.SetValue(value)
 
+EVT_RESULT_ID = wx.NewId()
+def EVT_RESULT(win, func):
+	win.Connect(-1, -1, EVT_RESULT_ID, func)		
 
-class GraphFrame(wx.Frame):
-	title = 'HP/Agilent 3457A Multimeter Panel'
+class ResultEvent(wx.PyEvent):
+	def __init__(self, data, ids):
+		wx.PyEvent.__init__(self)
+		self.SetEventType(EVT_RESULT_ID)
+		self.datas = data
+		self.ids = ids
+		
+class Worker(Thread):
+	def __init__(self, notify_window, id):
+		Thread.__init__(self)
+		self._notify_window = notify_window
+		self.id = id
+		self.start()
 
-	def next(self):
+	def run(self):
 		global hp
 		try:
 			hp
 		except NameError:
 			self.setCom()
-			return hp.measure()
-		else:
-			return hp.measure()
+		wx.PostEvent(self._notify_window, ResultEvent(hp.measure(), self.id))
+
+class GraphFrame(wx.Frame):
+	title = 'HP/Agilent 3457A Multimeter Panel'
 
 	def __init__(self):
 		wx.Frame.__init__(self, None, -1, self.title)
+		global hp
+		try:
+			hp
+		except NameError:
+			self.setCom()
 		self.paused = False
-		add = self.next()
 		self.dataval = dataval()
-		self.dataval.add(add)
-		self.data = [add]
-		
+		self.data = []
+		self.worker = None
+		self.id = 1
+		if not self.worker:
+			self.worker = Worker(self, self.id)
+		EVT_RESULT(self,self.OnResult)
 		self.create_menu()
 		self.create_main_panel()
-		
 		self.redraw_timer = wx.Timer(self)
-		self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
-		self.redraw_timer.Start((float(hp.getPlc())/60)*2)
+		#self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
+		#self.redraw_timer.Start(100)
 
 	def create_menu(self):
 		self.menubar = wx.MenuBar()
@@ -446,13 +464,30 @@ class GraphFrame(wx.Frame):
 		self.canvas.draw()
 
 	def on_pause_button(self, event):
+		if self.worker:
+			self.worker.abort()
 		self.paused = not self.paused
 
 	def clear_data(self, event):
 		self.data = []
 		self.dataval.clear()
+	
+	def OnResult(self, event):
+		if event.datas is None:
+			print "killing"
+		else:
+			self.dataval.add(event.datas)
+			self.data.append(event.datas)
+			self.draw_plot()
+		self.worker = None
+		if not self.paused and event.ids == self.id:
+			self.id = self.id + 1
+			self.worker = Worker(self, self.id)
 
 	def setMode(self, event):
+		if self.worker is not None:
+			self.paused = True
+			time.sleep(1)
 		mode = event.GetId()
 		if (mode == 0):
 			self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -475,6 +510,10 @@ class GraphFrame(wx.Frame):
 		if (mode == 9):
 			self.Mode = ["Frequency", "Hertz", "Hz", "freq"]
 		hp.setMeasure(self.Mode[3])
+		time.sleep(.1)
+		self.paused = False
+		self.id = self.id + 1
+		self.worker = Worker(self, self.id)
 
 	def on_update_pause_button(self, event):
 		label = "Resume" if self.paused else "Pause"
@@ -503,12 +542,11 @@ class GraphFrame(wx.Frame):
 			for row in self.data:
 				writer.writerow([row])
 
-	def on_redraw_timer(self, event):
+	""""def on_redraw_timer(self, event):
 		if not self.paused:
-			add = self.next()
-			self.dataval.add(add)
-			self.data.append(add)
-			self.draw_plot()
+			if not self.worker:
+				self.worker = Worker(self)
+				self.draw_plot()"""
 
 	def setCom(self):
 		global hp
