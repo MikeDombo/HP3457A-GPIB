@@ -59,6 +59,7 @@ class dataval(object):
 			diffsquared = (val - self.avg) ** 2
 			sum_diffsquared = diffsquared + sum_diffsquared
 		return (sum_diffsquared / self.len) ** (.5)
+		
 	def clear(self):
 		self.minnum = sys.maxint
 		self.maxnum = -sys.maxint + 1
@@ -220,7 +221,7 @@ class GraphFrame(wx.Frame):
 		try:
 			hp
 		except NameError:
-			self.setCom()
+			self.setCom(None)
 		self.paused = False
 		self.dataval = dataval()
 		self.data = []
@@ -231,12 +232,11 @@ class GraphFrame(wx.Frame):
 		EVT_RESULT(self,self.OnResult)
 		self.create_menu()
 		self.create_main_panel()
-		self.redraw_timer = wx.Timer(self)
-		#self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
-		#self.redraw_timer.Start(100)
 
 	def create_menu(self):
 		self.menubar = wx.MenuBar()
+		
+		#file menu
 		menu_file = wx.Menu()
 		m_expt = menu_file.Append(-1, "&Save plot\tCtrl-S", "Save plot to file")
 		self.Bind(wx.EVT_MENU, self.on_save_plot, m_expt)
@@ -245,10 +245,14 @@ class GraphFrame(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 		self.menubar.Append(menu_file, "&File")
 
+		#settings menu
 		menu_set = wx.Menu()
 		m_ser = menu_set.Append(-1, "Serial Ports", "Set serial port")
 		self.Bind(wx.EVT_MENU, self.setCom, m_ser)
+		m_nplc = menu_set.Append(-1, "NPLC", "Number of Power Line Cycles")
+		self.Bind(wx.EVT_MENU, self.setNPLC, m_nplc)
 		self.menubar.Append(menu_set, "&Settings")
+		
 		self.SetMenuBar(self.menubar)
 
 	def create_main_panel(self):
@@ -329,6 +333,7 @@ class GraphFrame(wx.Frame):
 		self.vbox3.Add(self.min, border=1, flag=wx.ALL)
 		self.hbox3.Add(self.vbox3, 0, flag=wx.ALIGN_RIGHT | wx.TOP)
 		self.vbox4 = wx.BoxSizer(wx.VERTICAL)
+		
 		#Control Buttons
 		self.DCV = wx.Button(self.panel, 0, "DCV")
 		self.Bind(wx.EVT_BUTTON, self.setMode, self.DCV)
@@ -544,13 +549,21 @@ class GraphFrame(wx.Frame):
 			for row in self.data:
 				writer.writerow([row])
 
-	def setCom(self):
+	def setCom(self, event):
 		global hp
 		dlg = wx.TextEntryDialog(self, "What is the serial port?", defaultValue="COM1")
 		dlg.ShowModal()
 		com = dlg.GetValue()
 		dlg.Destroy()
 		hp = HP_3457A.hp(com)
+	
+	def setNPLC(self, event):
+		global hp
+		dlg = wx.TextEntryDialog(self, "How Many Power Line Cycles?", defaultValue="10")
+		dlg.ShowModal()
+		plc = dlg.GetValue()
+		dlg.Destroy()
+		hp.setPlc(plc)
 
 	def on_exit(self, event):
 		sys.exit(0)
