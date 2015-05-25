@@ -23,20 +23,22 @@ class hp():
 		self.gotPlc = False
 		self.plc = 10
 		self.digits = '6.5'
-		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1)
-		self.ser_io = io.TextIOWrapper(io.BufferedRWPair(self.ser, self.ser, 1), newline = '\r\n', line_buffering = True)
-		self.ser_io.write(u'++rst\r\n')
+		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=3)
+		self.ser.write('++rst\r\n')
 		time.sleep(2)
-		self.ser_io.write(u'++addr 22\r\n')
-		self.ser_io.write(u'++eoi 0\r\n')
-		self.ser_io.write(u'++eos 0\r\n')
-		self.ser_io.write(u'BEEP\r\n')
-		self.ser_io.write(u'ID?\r\n')
+		self.ser.write('++addr 22\r\n')
+		self.ser.write('++debug 1\r\n')
+		self.ser.write('++eoi 0\r\n')
+		self.ser.write('++eos 0\r\n')
+		self.ser.write('++read_tmo_ms 5000\r\n')
+		self.ser.write('BEEP\r\n')
+		self.ser.write('END ALWAYS\r\n')
+		self.ser.write('ID?\r\n')
 		time.sleep(.02)
 		if "HP3457" not in self.readline():
 			print "check connections and settings"
-		self.ser_io.write(u'DCV\r\n') 
-		self.ser_io.write(u'TRIG SYN\r\n')
+		self.ser.write('DCV\r\n') 
+		self.ser.write('TRIG SYN\r\n')
 
 	def getOffset(self, unit, value):
 		digit = self.getDigits()
@@ -468,25 +470,21 @@ class hp():
 		return freq
 		
 	def read(self):
-		self.ser_io.write(u'++read\r\n')
-		time.sleep((float(self.plc)/60))
+		self.ser.write('++read\r\n')
 		val = self.readline()
 		return string.rstrip(val, '\r\n')
 		
 	def measure(self):
 		if float(self.getDigits()) > 6.5:
 			value = self.read()
-			self.ser_io.write(u'RMATH HIRES\r\n')
-			time.sleep(.02)
-			self.ser_io.write(u'++read\r\n')
-			time.sleep(.02)
+			self.ser.write('RMATH HIRES\r\n')
+			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.readline(), '\r\n')
 			try:
 				float(value)
 				float(hire)
 				return float(value) + float(hire)
 			except ValueError:
-				time.sleep((float(self.plc)/60.0))
 				return self.measure()
 		else:
 			value = self.read()
@@ -494,7 +492,6 @@ class hp():
 				float(value)
 				return float(value)
 			except ValueError:
-				time.sleep((float(self.plc)/60.0))
 				return self.measure()
 			
 
@@ -502,7 +499,7 @@ class hp():
 		if self.gotPlc:
 			return self.plc
 		else:
-			self.ser_io.write(u'NPLC?\r')
+			self.ser.write('NPLC?\r\n')
 			self.plc = string.rstrip(self.readline(), '\r\n')[1:]
 			try:
 				self.plc = float(self.plc)
@@ -533,25 +530,25 @@ class hp():
 		global unit
 		unit = units
 		if (unit == "dcv"):
-			self.ser_io.write(u'F10\r\n')
+			self.ser.write('F10\r\n')
 		elif (unit == "dci"):
-			self.ser_io.write(u'DCI\r\n')
+			self.ser.write('DCI\r\n')
 		elif (unit == "ohms2"):
-			self.ser_io.write(u'F40\r\n')
+			self.ser.write('F40\r\n')
 		elif (unit == "ohms4"):
-			self.ser_io.write(u'F50\r\n')
+			self.ser.write('F50\r\n')
 		elif (unit == "acv"):
-			self.ser_io.write(u'ACV\r\n')
+			self.ser.write('ACV\r\n')
 		elif (unit == "acdcv"):
-			self.ser_io.write(u'ACDCV\r\n')
+			self.ser.write('ACDCV\r\n')
 		elif (unit == "aci"):
-			self.ser_io.write(u'ACI\r\n')
+			self.ser.write('ACI\r\n')
 		elif (unit == "acdci"):
-			self.ser_io.write(u'ACDCI\r\n')
+			self.ser.write('ACDCI\r\n')
 		elif (unit == "freq"):
-			self.ser_io.write(u'FREQ\r\n')
+			self.ser.write('FREQ\r\n')
 		elif (unit == "per"):
-			self.ser_io.write(u'PER\r\n')
+			self.ser.write('PER\r\n')
 		time.sleep(1)
 		
 	def setPlc(self, plc):
@@ -574,6 +571,6 @@ class hp():
 		elif float(plc) == float(.0005):
 			plc = .0005
 		self.plc = plc
-		nplc = u"NPLC "+str(plc)+"\r\n"
-		self.ser_io.write(nplc)
-		time.sleep(.1)
+		nplc = "NPLC "+str(plc)+"\r\n"
+		self.ser.write(nplc)
+		time.sleep(1)

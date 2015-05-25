@@ -471,9 +471,10 @@ class GraphFrame(wx.Frame):
 		self.canvas.draw()
 
 	def on_pause_button(self, event):
-		if self.worker:
-			self.worker.abort()
 		self.paused = not self.paused
+		if not self.paused:
+			self.id = self.id + 1
+			self.worker = Worker(self, self.id)
 
 	def clear_data(self, event):
 		self.data = []
