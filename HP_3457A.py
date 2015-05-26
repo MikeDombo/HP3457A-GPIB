@@ -31,7 +31,6 @@ class hp():
 		self.ser.write('++eoi 0\r\n')
 		self.ser.write('++eos 0\r\n')
 		self.ser.write('++read_tmo_ms 5000\r\n')
-		self.ser.write('BEEP\r\n')
 		self.ser.write('END ALWAYS\r\n')
 		self.ser.write('ID?\r\n')
 		time.sleep(.02)
@@ -478,6 +477,7 @@ class hp():
 		if float(self.getDigits()) > 6.5:
 			value = self.read()
 			self.ser.write('RMATH HIRES\r\n')
+			time.sleep(.02)
 			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.readline(), '\r\n')
 			try:
