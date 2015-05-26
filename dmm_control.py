@@ -396,11 +396,12 @@ class GraphFrame(wx.Frame):
 		self.axes.set_xlabel("Samples", size=10)
 		pylab.setp(self.histo.get_xticklabels(), fontsize=8)
 		pylab.setp(self.histo.get_yticklabels(), fontsize=8)
-		self.plot_data = self.axes.plot(self.data, linewidth=1, color=(1, 1, 0), )[0]
-
+		self.plot_data = self.axes.plot(self.data, linewidth=1, color=(1, 1, 0))[0]
+		
 	def draw_plot(self):
 		self.axes.set_title(self.Mode[0] + ' Trend', size=12)
 		self.axes.set_ylabel(self.Mode[1], size=10)
+		
 		if self.xmax_control.is_auto():
 			xmax = self.dataval.getlen() if self.dataval.getlen() > 60 else 60
 		else:
@@ -421,6 +422,7 @@ class GraphFrame(wx.Frame):
 			ymax = float(self.ymax_control.manual_value())
 		self.axes.set_xbound(lower=xmin, upper=xmax)
 		self.axes.set_ybound(lower=ymin, upper=ymax)
+		
 		if self.cb_grid.IsChecked():
 			self.axes.grid(True, color='gray')
 			self.histo.grid(True, color='gray')
