@@ -1,5 +1,6 @@
 TODO:
 Add more settings
+Handle ovld on Ohms
 
 DONE:
 Make measurement updates non render-blocking
