@@ -574,3 +574,11 @@ class hp():
 		nplc = "NPLC "+str(plc)+"\r\n"
 		self.ser.write(nplc)
 		time.sleep(1)
+	
+	def setTerm(self, term):
+		if term == "Rear":
+			self.ser.write("TERM 2\r\n");
+		else:
+			self.ser.write("TERM 1\r\n");
+		time.sleep(.5)
+		

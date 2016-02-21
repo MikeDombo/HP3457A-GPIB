@@ -225,6 +225,7 @@ class GraphFrame(wx.Frame):
 		self.paused = False
 		self.dataval = dataval()
 		self.data = []
+		self.timing = []
 		self.worker = None
 		self.id = 1
 		if not self.worker:
@@ -238,8 +239,10 @@ class GraphFrame(wx.Frame):
 		
 		#file menu
 		menu_file = wx.Menu()
-		m_expt = menu_file.Append(-1, "&Save plot\tCtrl-S", "Save plot to file")
+		m_expt = menu_file.Append(-1, "&Save Plot\tCtrl-S", "Save Plot to File")
 		self.Bind(wx.EVT_MENU, self.on_save_plot, m_expt)
+		m_csv = menu_file.Append(-1, "&Save Data to CSV", "Save Data to CSV")
+		self.Bind(wx.EVT_MENU, self.on_save_csv, m_csv)
 		menu_file.AppendSeparator()
 		m_exit = menu_file.Append(-1, "E&xit\tCtrl-X", "Exit")
 		self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
@@ -251,6 +254,8 @@ class GraphFrame(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.setCom, m_ser)
 		m_nplc = menu_set.Append(-1, "NPLC", "Number of Power Line Cycles")
 		self.Bind(wx.EVT_MENU, self.setNPLC, m_nplc)
+		m_term = menu_set.Append(-1, "Set Terminals", "Set Front/Rear Terminal")
+		self.Bind(wx.EVT_MENU, self.setTerm, m_term)
 		self.menubar.Append(menu_set, "&Settings")
 		
 		self.SetMenuBar(self.menubar)
@@ -452,12 +457,12 @@ class GraphFrame(wx.Frame):
 			global hp
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
-			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
-			self.lowerLim.SetValue(str(self.data[self.dataval.getlen() - 1] - offset)[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
+			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
+			self.lowerLim.SetValue(str(self.data[self.dataval.getlen() - 1] - offset)[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
 			max1 = Units().convert(self.dataval.getmax())
 			min1 = Units().convert(self.dataval.getmin())
-			self.max.SetValue(str(max1[0])[0:8] + " " + max1[1] + self.Mode[2])
-			self.min.SetValue(str(min1[0])[0:8] + " " + min1[1] + self.Mode[2])
+			self.max.SetValue(str(max1[0]) + " " + max1[1] + self.Mode[2])
+			self.min.SetValue(str(min1[0]) + " " + min1[1] + self.Mode[2])
 			avg = Units().convert(self.dataval.getavg())
 			self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
 			self.samps.SetValue(str(self.dataval.getlen()))
@@ -499,6 +504,7 @@ class GraphFrame(wx.Frame):
 
 	def clear_data(self, event):
 		self.data = []
+		self.timing = []
 		self.dataval.clear()
 	
 	def OnResult(self, event):
@@ -508,6 +514,7 @@ class GraphFrame(wx.Frame):
 			if event.datas != 1.0000000E+38:
 				self.dataval.add(event.datas)
 				self.data.append(event.datas)
+				self.timing.append(int(round(time.time() * 1000)))
 				self.draw_plot()
 			else:
 				self.mainNum.SetValue("OVLD")
@@ -520,6 +527,7 @@ class GraphFrame(wx.Frame):
 		if self.worker is not None:
 			self.paused = True
 			time.sleep(1)
+		self.clear_data(self)
 		mode = event.GetId()
 		if (mode == 0):
 			self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -534,7 +542,7 @@ class GraphFrame(wx.Frame):
 		if (mode == 5):
 			self.Mode = ["AC Current", "Amperes", "A", "aci"]
 		if (mode == 6):
-			self.Mode = ["DC Couple AC Voltage", "Volts", "V", "acdcv"]
+			self.Mode = ["DC Coupled AC Voltage", "Volts", "V", "acdcv"]
 		if (mode == 7):
 			self.Mode = ["DC Coupled AC Current", "Amperes", "A", "acdci"]
 		if (mode == 8):
@@ -561,7 +569,7 @@ class GraphFrame(wx.Frame):
 		file_choices = "PNG (*.png)|*.png"
 		dlg = wx.FileDialog(
 			self,
-			message="Save plot as...",
+			message="Save Plot as...",
 			defaultDir=os.getcwd(),
 			defaultFile="plot.png",
 			wildcard=file_choices,
@@ -569,10 +577,23 @@ class GraphFrame(wx.Frame):
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPath()
 			self.canvas.print_figure(path, dpi=100)
-		with open("output.csv", "wb") as f:
-			writer = csv.writer(f)
-			for row in self.data:
-				writer.writerow([row])
+			
+	def on_save_csv(self, event):
+		file_choices = "CSV (*.csv)|*.csv"
+		dlg = wx.FileDialog(
+			self,
+			message="Save Data as...",
+			defaultDir=os.getcwd(),
+			defaultFile="output.csv",
+			wildcard=file_choices,
+			style=wx.SAVE | wx.OVERWRITE_PROMPT)
+		if dlg.ShowModal() == wx.ID_OK:
+			path = dlg.GetPath()
+			with open(path, "wb") as f:
+				writer = csv.writer(f)
+				writer.writerow([self.Mode[0], "Timestamp (ms)"])
+				for i in range(0, self.dataval.getlen()):
+					writer.writerow([self.data[i], self.timing[i]])
 
 	def setCom(self, event):
 		global hp
@@ -590,6 +611,20 @@ class GraphFrame(wx.Frame):
 		dlg.Destroy()
 		hp.setPlc(plc)
 
+	def setTerm(self, event):
+		global hp
+		dlg = wx.SingleChoiceDialog(self, 'Set Terminals', 'Set Terminals', ["Front", "Rear"], wx.CHOICEDLG_STYLE)
+		if dlg.ShowModal() == wx.ID_OK:
+			if self.worker is not None:
+				self.paused = True
+				time.sleep(1)
+			term = dlg.GetStringSelection()
+			hp.setTerm(term)
+			self.paused = False
+			self.id = self.id + 1
+			self.worker = Worker(self, self.id)
+		dlg.Destroy()
+	
 	def on_exit(self, event):
 		sys.exit(0)
 
