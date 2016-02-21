@@ -310,7 +310,7 @@ class GraphFrame(wx.Frame):
 		# Top Block
 		self.hbox3 = wx.BoxSizer(wx.HORIZONTAL)
 		self.mainNum = wx.TextCtrl(self.panel, -1, "", size=(440, 90))
-		self.mainNum.SetFont(wx.Font(40, wx.DECORATIVE, wx.NORMAL, wx.NORMAL))
+		self.mainNum.SetFont(wx.Font(48, wx.DECORATIVE, wx.NORMAL, wx.NORMAL))
 		self.vbox6 = wx.BoxSizer(wx.VERTICAL)
 		self.hbox4 = wx.BoxSizer(wx.HORIZONTAL)
 		self.vbox6.Add(self.mainNum, border=5, flag=wx.ALL)
@@ -411,17 +411,30 @@ class GraphFrame(wx.Frame):
 		else:
 			xmin = int(self.xmin_control.manual_value())
 		if self.ymin_control.is_auto():
-			mins = min(self.data[xmin:xmax])
-			ymin = float(mins-(mins*.05))
+			if xmax == self.dataval.getlen() and xmin == 0:
+				mins = self.dataval.getmin()
+			else:
+				mins = min(self.data[xmin:xmax])
 		else:
 			ymin = float(self.ymin_control.manual_value())
 		if self.ymax_control.is_auto():
-			maxs = max(self.data[xmin:xmax])
-			ymax = float(maxs+(maxs*.05))
+			if xmax == self.dataval.getlen() and xmin == 0:
+				maxs = self.dataval.getmax()
+			else:
+				maxs = max(self.data[xmin:xmax])
+			ymax = float(maxs+((maxs-mins)*.05))
 		else:
 			ymax = float(self.ymax_control.manual_value())
+			
+		if self.ymin_control.is_auto():
+			if maxs == mins:
+				ymin = float(mins-(mins*.05))
+			else:
+				ymin = float(mins-((maxs-mins)*.05))
+		
 		self.axes.set_xbound(lower=xmin, upper=xmax)
 		self.axes.set_ybound(lower=ymin, upper=ymax)
+		
 		
 		if self.cb_grid.IsChecked():
 			self.axes.grid(True, color='gray')
@@ -492,9 +505,12 @@ class GraphFrame(wx.Frame):
 		if event.datas is None:
 			print "killing"
 		else:
-			self.dataval.add(event.datas)
-			self.data.append(event.datas)
-			self.draw_plot()
+			if event.datas != 1.0000000E+38:
+				self.dataval.add(event.datas)
+				self.data.append(event.datas)
+				self.draw_plot()
+			else:
+				self.mainNum.SetValue("OVLD")
 		self.worker = None
 		if not self.paused and event.ids == self.id:
 			self.id = self.id + 1
@@ -552,7 +568,7 @@ class GraphFrame(wx.Frame):
 			style=wx.SAVE)
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPath()
-			self.canvas.print_figure(path, dpi=self.dpi)
+			self.canvas.print_figure(path, dpi=100)
 		with open("output.csv", "wb") as f:
 			writer = csv.writer(f)
 			for row in self.data:
