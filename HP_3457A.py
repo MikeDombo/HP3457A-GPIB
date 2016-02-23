@@ -2,7 +2,6 @@ import serial
 import string
 import time
 import io
-from datetime import datetime
 global unit
 
 
@@ -13,7 +12,6 @@ class hp():
 	def readline(self):
 		result = bytearray()
 		c = 0
-		a = datetime.now()
 		while c != '\r':
 			c = self.ser.read(1)
 			result += c
@@ -22,18 +20,16 @@ class hp():
 	def __init__(self, com):
 		self.gotPlc = False
 		self.plc = 10
-		self.digits = '6.5'
+		self.digits = '7.5'
 		self.ser = serial.Serial(com, 460800, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=3)
 		self.ser.write('++rst\r\n')
 		time.sleep(2)
 		self.ser.write('++addr 22\r\n')
-		self.ser.write('++debug 1\r\n')
 		self.ser.write('++eoi 0\r\n')
 		self.ser.write('++eos 0\r\n')
 		self.ser.write('++read_tmo_ms 5000\r\n')
 		self.ser.write('END ALWAYS\r\n')
 		self.ser.write('ID?\r\n')
-		time.sleep(.02)
 		if "HP3457" not in self.readline():
 			print "check connections and settings"
 		self.ser.write('DCV\r\n') 
@@ -477,13 +473,19 @@ class hp():
 		if float(self.getDigits()) > 6.5:
 			value = self.read()
 			self.ser.write('RMATH HIRES\r\n')
-			time.sleep(.02)
+			time.sleep(.007)
 			self.ser.write('++read\r\n')
 			hire = string.rstrip(self.readline(), '\r\n')
 			try:
 				float(value)
 				float(hire)
-				return float(value) + float(hire)
+				if abs(float(hire)) == 0:
+					return float(value) + float(hire)
+				elif abs(float(value))/abs(float(hire)) > 1e6:
+					return float(value) + float(hire)
+				else:
+					time.sleep(.1)
+					return float(value)
 			except ValueError:
 				return self.measure()
 		else:
@@ -549,7 +551,7 @@ class hp():
 			self.ser.write('FREQ\r\n')
 		elif (unit == "per"):
 			self.ser.write('PER\r\n')
-		time.sleep(1)
+		time.sleep(.2)
 		
 	def setPlc(self, plc):
 		try:

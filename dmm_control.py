@@ -3,7 +3,6 @@ import pprint
 import sys
 import wx
 import matplotlib
-from datetime import datetime
 from threading import *
 
 matplotlib.use('WXAgg')
@@ -387,8 +386,8 @@ class GraphFrame(wx.Frame):
 	def _onMotion(self, event):
 		if event.xdata != None and event.ydata != None:
 			if int(round(event.xdata)) < len(self.data) and int(round(event.xdata)) in range(int(self.axes.get_xlim()[0]), int(self.axes.get_xlim()[1])):
-				self.xVal.SetValue(str(int(round(event.xdata)))[0:8])
-				self.yVal.SetValue(str(self.data[int(round(event.xdata))])[0:8] + " " + self.Mode[2])
+				self.xVal.SetValue(str(int(round(event.xdata))))
+				self.yVal.SetValue(str(Units().convert(self.data[int(round(event.xdata))])[0]) + " " +Units().convert(self.data[int(round(event.xdata))])[1]+ self.Mode[2])
 
 	def init_plot(self):
 		self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -414,7 +413,12 @@ class GraphFrame(wx.Frame):
 		if self.xmin_control.is_auto():
 			xmin = xmax - 100
 		else:
-			xmin = int(self.xmin_control.manual_value())
+			if int(self.xmin_control.manual_value()) < 0:
+				xmin = xmax + int(self.xmin_control.manual_value())
+				if xmin < 0:
+					xmin = 0
+			else:
+				xmin = int(self.xmin_control.manual_value())
 		if self.ymin_control.is_auto():
 			if xmax == self.dataval.getlen() and xmin == 0:
 				mins = self.dataval.getmin()
@@ -443,22 +447,20 @@ class GraphFrame(wx.Frame):
 		
 		if self.cb_grid.IsChecked():
 			self.axes.grid(True, color='gray')
-			self.histo.grid(True, color='gray')
 		else:
 			self.axes.grid(False)
-			self.histo.grid(False)
 
 		pylab.setp(self.axes.get_xticklabels(), visible=self.cb_xlab.IsChecked())
 		pylab.setp(self.histo.get_xticklabels(), visible=True)
 		self.plot_data.set_xdata(np.arange(self.dataval.getlen()))
 		self.plot_data.set_ydata(np.array(self.data))
 
-		if self.dataval.getlen() > 1:
+		if self.dataval.getlen() > 0:
 			global hp
-			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
+			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0]) + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
-			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
-			self.lowerLim.SetValue(str(self.data[self.dataval.getlen() - 1] - offset)[0:9] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
+			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
+			self.lowerLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
 			max1 = Units().convert(self.dataval.getmax())
 			min1 = Units().convert(self.dataval.getmin())
 			self.max.SetValue(str(max1[0]) + " " + max1[1] + self.Mode[2])
@@ -473,7 +475,6 @@ class GraphFrame(wx.Frame):
 				if self.histo_width.manual_value()[1] and self.histo_width.manual_value()[0][0] != "" and self.histo_width.manual_value()[0][1] != "":
 					rng = (float(self.histo_width.manual_value()[0][0]), float(self.histo_width.manual_value()[0][1]))
 					n, b, self.hist = self.histo.hist(self.data, bins=self.bin_control.manual_value(), histtype='stepfilled', color='b', range=rng)
-					self.histoMax.SetValue(str(b[np.where(n == n.max())][0])[0:8] + " " + self.Mode[2])
 				elif self.histo_width.manual_value()[2] and self.histo_width.manual_value()[0][0] != "" and self.histo_width.manual_value()[0][1] != "":
 					try:
 						center = float(self.histo_width.manual_value()[0][0])
@@ -485,10 +486,9 @@ class GraphFrame(wx.Frame):
 						span = 1
 					rng = (center - span, center + span)
 					n, b, self.hist = self.histo.hist(self.data, bins=self.bin_control.manual_value(), histtype='stepfilled', color='b', range=rng)
-					self.histoMax.SetValue(str(b[np.where(n == n.max())][0])[0:8] + " " + self.Mode[2])
 			else:
 				n, b, self.hist = self.histo.hist(self.data, bins=self.bin_control.manual_value(), histtype='stepfilled', color='b')
-				self.histoMax.SetValue(str(b[np.where(n == n.max())][0])[0:8] + " " + self.Mode[2])
+			self.histoMax.SetValue(str(Units().convert(b[np.where(n == n.max())][0])[0])[0:8] + " " + Units().convert(b[np.where(n == n.max())][0])[1] +self.Mode[2])
 			self.histo.set_title(self.Mode[0] + ' Histogram', size=12)
 			self.histo.set_xlabel(self.Mode[1], size=10)
 			self.histo.set_ylabel("Samples", size=10)
@@ -508,6 +508,10 @@ class GraphFrame(wx.Frame):
 		self.dataval.clear()
 	
 	def OnResult(self, event):
+		self.worker = None
+		if not self.paused and event.ids == self.id:
+			self.id = self.id + 1
+			self.worker = Worker(self, self.id)
 		if event.datas is None:
 			print "killing"
 		else:
@@ -518,16 +522,15 @@ class GraphFrame(wx.Frame):
 				self.draw_plot()
 			else:
 				self.mainNum.SetValue("OVLD")
-		self.worker = None
-		if not self.paused and event.ids == self.id:
-			self.id = self.id + 1
-			self.worker = Worker(self, self.id)
 
 	def setMode(self, event):
+		dlg = wx.MessageDialog(self, "Changing Measurement Will Clear Previous Data, Continue?", "Delete Data and Change Measurement?", wx.YES_NO|wx.CENTRE|wx.STAY_ON_TOP, wx.DefaultPosition)
+		if dlg.ShowModal() != 5103:
+			return
+		dlg.Destroy()
 		if self.worker is not None:
 			self.paused = True
 			time.sleep(1)
-		self.clear_data(self)
 		mode = event.GetId()
 		if (mode == 0):
 			self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -550,10 +553,10 @@ class GraphFrame(wx.Frame):
 		if (mode == 9):
 			self.Mode = ["Frequency", "Hertz", "Hz", "freq"]
 		hp.setMeasure(self.Mode[3])
-		time.sleep(.1)
 		self.paused = False
 		self.id = self.id + 1
 		self.worker = Worker(self, self.id)
+		self.clear_data(self)
 
 	def on_update_pause_button(self, event):
 		label = "Resume" if self.paused else "Pause"
