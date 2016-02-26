@@ -373,7 +373,8 @@ class GraphFrame(wx.Frame):
 
 		self.hbox3.Add(self.vbox4, 0, flag=wx.ALIGN_RIGHT | wx.TOP)
 		self.hbox3.Add(self.vbox5, 0, flag=wx.ALIGN_RIGHT | wx.TOP)
-		self.vbox = wx.BoxSizer(wx.VERTICAL)
+		
+		self.vbox = wx.BoxSizer(wx.VERTICAL)		
 		self.vbox.Add(self.hbox3, 0, flag=wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL)
 		self.vbox.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
 		self.vbox.Add(self.hbox1, 0, flag=wx.ALIGN_LEFT | wx.TOP)
@@ -455,7 +456,7 @@ class GraphFrame(wx.Frame):
 		self.plot_data.set_xdata(np.arange(self.dataval.getlen()))
 		self.plot_data.set_ydata(np.array(self.data))
 
-		if self.dataval.getlen() > 0:
+		if self.dataval.getlen() > 1:
 			global hp
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0]) + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
@@ -508,6 +509,7 @@ class GraphFrame(wx.Frame):
 		self.dataval.clear()
 	
 	def OnResult(self, event):
+		myTime = time.time()
 		self.worker = None
 		if not self.paused and event.ids == self.id:
 			self.id = self.id + 1
@@ -522,6 +524,7 @@ class GraphFrame(wx.Frame):
 				self.draw_plot()
 			else:
 				self.mainNum.SetValue("OVLD")
+		print (time.time()-myTime)*1000
 
 	def setMode(self, event):
 		dlg = wx.MessageDialog(self, "Changing Measurement Will Clear Previous Data, Continue?", "Delete Data and Change Measurement?", wx.YES_NO|wx.CENTRE|wx.STAY_ON_TOP, wx.DefaultPosition)
@@ -600,10 +603,13 @@ class GraphFrame(wx.Frame):
 
 	def setCom(self, event):
 		global hp
-		dlg = wx.TextEntryDialog(self, "What is the serial port?", defaultValue="COM1")
-		dlg.ShowModal()
-		com = dlg.GetValue()
-		dlg.Destroy()
+		if len(sys.argv) == 1:
+			dlg = wx.TextEntryDialog(self, "What is the serial port?", defaultValue="COM1")
+			dlg.ShowModal()
+			com = dlg.GetValue()
+			dlg.Destroy()
+		else:
+			com = sys.argv[1]
 		hp = HP_3457A.hp(com)
 	
 	def setNPLC(self, event):
