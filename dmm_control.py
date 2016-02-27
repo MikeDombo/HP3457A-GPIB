@@ -509,7 +509,6 @@ class GraphFrame(wx.Frame):
 		self.dataval.clear()
 	
 	def OnResult(self, event):
-		myTime = time.time()
 		self.worker = None
 		if not self.paused and event.ids == self.id:
 			self.id = self.id + 1
@@ -524,7 +523,6 @@ class GraphFrame(wx.Frame):
 				self.draw_plot()
 			else:
 				self.mainNum.SetValue("OVLD")
-		print (time.time()-myTime)*1000
 
 	def setMode(self, event):
 		dlg = wx.MessageDialog(self, "Changing Measurement Will Clear Previous Data, Continue?", "Delete Data and Change Measurement?", wx.YES_NO|wx.CENTRE|wx.STAY_ON_TOP, wx.DefaultPosition)
