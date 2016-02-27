@@ -34,3 +34,12 @@ Histogram
 * **Histogram Peak** - This is the value of the highest part of the histogram
 
 Standard Deviation - This value is the standard deviation of all the past readings
+
+###Settings
+* Serial Port - Set serial port used to communicate with the digital multimeter
+* NPLC - Set the number of powerline cycles used to integrate each reading
+* Set Terminals - Allows the user to switch terminals used between front and back panel
+
+###Data Export
+* Save Plot - Saves current plotting window as a png
+* Save Data to CSV - Save the data to a csv file
