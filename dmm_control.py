@@ -257,8 +257,18 @@ class GraphFrame(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.setTerm, m_term)
 		self.menubar.Append(menu_set, "&Settings")
 		
+		#view menu
+		menu_view = wx.Menu()
+		self.m_stddev = menu_view.Append(wx.ID_ANY, "Standard Deviation as Percentage", "Standard Deviation as Percentage", kind=wx.ITEM_CHECK)
+		self.Bind(wx.EVT_MENU, None, self.m_stddev)
+		self.m_offset = menu_view.Append(wx.ID_ANY, "Possibilities as Percentage", "Possibilities as Percentage", kind=wx.ITEM_CHECK)
+		self.Bind(wx.EVT_MENU, None, self.m_offset)
+		menu_view.Check(self.m_stddev.GetId(), False)
+		menu_view.Check(self.m_offset.GetId(), False)
+		self.menubar.Append(menu_view, "&View")
+		
 		self.SetMenuBar(self.menubar)
-
+			
 	def create_main_panel(self):
 		self.panel = wx.Panel(self)
 		self.Bind(wx.EVT_CLOSE, self.on_exit)
@@ -460,8 +470,12 @@ class GraphFrame(wx.Frame):
 			global hp
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0]) + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
-			self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
-			self.lowerLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
+			if self.m_offset.IsChecked():
+				self.upperLim.SetValue(self.ppmPercent((float(str(offset / abs(self.data[self.dataval.getlen() - 1]))[0:8]))))
+				self.lowerLim.SetValue(self.ppmPercent((-float(str(offset / abs(self.data[self.dataval.getlen() - 1]))[0:8]))))
+			else:
+				self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
+				self.lowerLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
 			max1 = Units().convert(self.dataval.getmax())
 			min1 = Units().convert(self.dataval.getmin())
 			self.max.SetValue(str(max1[0]) + " " + max1[1] + self.Mode[2])
@@ -469,8 +483,11 @@ class GraphFrame(wx.Frame):
 			avg = Units().convert(self.dataval.getavg())
 			self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
 			self.samps.SetValue(str(self.dataval.getlen()))
-			std = Units().convert(self.dataval.getstd(self.data))
-			self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
+			if self.m_stddev.IsChecked():
+				self.std.SetValue(self.ppmPercent(abs(float(str(self.dataval.getstd(self.data)/self.dataval.getavg())[0:8]))))
+			else:
+				std = Units().convert(self.dataval.getstd(self.data))
+				self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
 			self.histo.clear()
 			if self.histo_width.manual_value()[1] or self.histo_width.manual_value()[2]:
 				if self.histo_width.manual_value()[1] and self.histo_width.manual_value()[0][0] != "" and self.histo_width.manual_value()[0][1] != "":
@@ -634,7 +651,12 @@ class GraphFrame(wx.Frame):
 	
 	def on_exit(self, event):
 		sys.exit(0)
-
+	
+	def ppmPercent(self, percent):
+		if abs(percent) >= 0.001:
+			return str(percent)+"%"
+		else:
+			return str(10000*percent)+"ppm"
 
 class Units:
 	def __init__(self):
