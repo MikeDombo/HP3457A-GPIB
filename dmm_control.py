@@ -471,8 +471,8 @@ class GraphFrame(wx.Frame):
 			self.mainNum.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1])[0]) + " " + Units().convert(self.data[self.dataval.getlen() - 1])[1] + self.Mode[2])
 			offset = hp.getOffset(self.Mode[3], self.data[self.dataval.getlen() - 1])
 			if self.m_offset.IsChecked():
-				self.upperLim.SetValue(self.ppmPercent((float(str(offset / abs(self.data[self.dataval.getlen() - 1]))[0:8]))))
-				self.lowerLim.SetValue(self.ppmPercent((-float(str(offset / abs(self.data[self.dataval.getlen() - 1]))[0:8]))))
+				self.upperLim.SetValue(self.ppmPercent((float(offset / abs(self.data[self.dataval.getlen() - 1])))))
+				self.lowerLim.SetValue(self.ppmPercent((-float(offset / abs(self.data[self.dataval.getlen() - 1])))))
 			else:
 				self.upperLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
 				self.lowerLim.SetValue(str(Units().convert(self.data[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " + Units().convert(self.data[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
@@ -484,7 +484,7 @@ class GraphFrame(wx.Frame):
 			self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
 			self.samps.SetValue(str(self.dataval.getlen()))
 			if self.m_stddev.IsChecked():
-				self.std.SetValue(self.ppmPercent(abs(float(str(self.dataval.getstd(self.data)/self.dataval.getavg())[0:8]))))
+				self.std.SetValue(self.ppmPercent(abs(float(self.dataval.getstd(self.data)/self.dataval.getavg()))))
 			else:
 				std = Units().convert(self.dataval.getstd(self.data))
 				self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
@@ -653,10 +653,10 @@ class GraphFrame(wx.Frame):
 		sys.exit(0)
 	
 	def ppmPercent(self, percent):
-		if abs(percent) >= 0.001:
-			return str(percent)+"%"
+		if abs(percent*100) >= 0.001:
+			return str(percent*100)[0:8]+"%"
 		else:
-			return str(10000*percent)+"ppm"
+			return str(10000*percent)[0:8]+"ppm"
 
 class Units:
 	def __init__(self):

@@ -283,7 +283,7 @@ class hp():
 				range = '30v'
 			elif (value < 303):
 				range = '300v'
-			return ((value * dcvAcc[range][plc]['acc']) + dcvRes[range][digit] * dcvAcc[range][plc]['counts'])
+			return ((value * dcvAcc[range][plc]['acc']) + (dcvRes[range][digit] * dcvAcc[range][plc]['counts']))
 		elif (unit == "dci"):
 			if (value < 303e-6):
 				range = '300ua'
