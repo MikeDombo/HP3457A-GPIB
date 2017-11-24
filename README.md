@@ -1,7 +1,7 @@
 # Digital Multimeter Interface
 This project is a Python based user interface for digital multimeters. I built the frontend so that anyone can change the device that it talks to by writing only a couple functions in a class. The frontend uses wxPython for the GUI and Matplotlib for the trend plot and histogram. 
 
-![interface](https://raw.githubusercontent.com/md100play/HP3457A-GPIB/master/md/full-interface.png)
+![interface](https://raw.githubusercontent.com/MikeDombo/HP3457A-GPIB/master/md/full-interface.png)
 
 ## Features
 
@@ -10,7 +10,7 @@ The most important features are located in the top panel of the interface. These
 ### Offset Values
 
 
-![offset values](https://raw.githubusercontent.com/md100play/HP3457A-GPIB/master/md/possibility.png)
+![offset values](https://raw.githubusercontent.com/MikeDombo/HP3457A-GPIB/master/md/possibility.png)
 
 
 This section shows the greatest and least possible value of a measurement for a given reading. The offset is based on the worst stated specification of the HP/Agilent 3457A for each range and measurement.  This section is helpful to determine if a meter is within specification or, conversely, if the thing you are measuring is within specification.
@@ -18,7 +18,7 @@ This section shows the greatest and least possible value of a measurement for a 
 ### Data Plotting
 
 In addition to simply recording data, this project plots the data over time and also as a histogram.
-![plot](https://raw.githubusercontent.com/md100play/HP3457A-GPIB/master/md/plot.png)
+![plot](https://raw.githubusercontent.com/MikeDombo/HP3457A-GPIB/master/md/plot.png)
 
 The plot window and histogram can be modified by the controls in the bottom panel.
 * **X min** - Auto or Manual range of the minimum x value of the trendline. The manual value can be negative, this means that the window will be z amount behind the current reading. Auto keeps the window to 100 readings.
