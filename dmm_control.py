@@ -1,12 +1,11 @@
 import os
 import sys
+from threading import Thread
 
 import wx
 import matplotlib
 import serial.tools.list_ports
-from threading import *
 
-matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
 import numpy as np
@@ -17,6 +16,7 @@ import math
 import time
 
 global hp
+matplotlib.use('WXAgg')
 
 
 class dataval(object):
@@ -31,7 +31,7 @@ class dataval(object):
     def add(self, val):
         try:
             float(val)
-        except:
+        except ValueError:
             print(str(val) + " is not a float!")
         if val < self.minnum:
             self.minnum = val
@@ -209,11 +209,11 @@ class ResultEvent(wx.PyEvent):
 
 
 class Worker(Thread):
-    def __init__(self, notify_window, id):
+    def __init__(self, notify_window, num):
         self.stopped = False
         Thread.__init__(self)
         self._notify_window = notify_window
-        self.id = id
+        self.id = num
         self.start()
 
     def run(self):
@@ -470,8 +470,8 @@ class GraphFrame(wx.Frame):
             if int(round(event.xdata)) < self.dataval.getlen() and int(round(event.xdata)) in range(
                     int(self.axes.get_xlim()[0]), int(self.axes.get_xlim()[1])):
                 self.xVal.SetValue(str(int(round(event.xdata))))
-                self.yVal.SetValue(str(Units().convert(self.dataval[int(round(event.xdata))])[0]) + " " +
-                                   Units().convert(self.dataval[int(round(event.xdata))])[1] + self.Mode[2])
+                self.yVal.SetValue(str(Units.convert(self.dataval[int(round(event.xdata))])[0]) + " " +
+                                   Units.convert(self.dataval[int(round(event.xdata))])[1] + self.Mode[2])
 
     def init_plot(self):
         self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -541,30 +541,30 @@ class GraphFrame(wx.Frame):
 
         if self.dataval.getlen() > 1:
             global hp
-            self.mainNum.SetValue(str(Units().convert(self.dataval[self.dataval.getlen() - 1])[0]) + " " +
-                                  Units().convert(self.dataval[self.dataval.getlen() - 1])[1] + self.Mode[2])
-            offset = hp.getOffset(self.Mode[3], self.dataval[self.dataval.getlen() - 1])
+            self.mainNum.SetValue(str(Units.convert(self.dataval[self.dataval.getlen() - 1])[0]) + " " +
+                                  Units.convert(self.dataval[self.dataval.getlen() - 1])[1] + self.Mode[2])
+            offset = hp.get_offset(self.Mode[3], self.dataval[self.dataval.getlen() - 1])
             if self.m_offset.IsChecked():
                 self.upperLim.SetValue(self.ppmPercent((float(offset / abs(self.dataval[self.dataval.getlen() - 1])))))
                 self.lowerLim.SetValue(self.ppmPercent((-float(offset / abs(self.dataval[self.dataval.getlen() - 1])))))
             else:
                 self.upperLim.SetValue(
-                    str(Units().convert(self.dataval[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " +
-                    Units().convert(self.dataval[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
+                    str(Units.convert(self.dataval[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " +
+                    Units.convert(self.dataval[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
                 self.lowerLim.SetValue(
-                    str(Units().convert(self.dataval[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " +
-                    Units().convert(self.dataval[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
-            max1 = Units().convert(self.dataval.getmax())
-            min1 = Units().convert(self.dataval.getmin())
+                    str(Units.convert(self.dataval[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " +
+                    Units.convert(self.dataval[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
+            max1 = Units.convert(self.dataval.getmax())
+            min1 = Units.convert(self.dataval.getmin())
             self.max.SetValue(str(max1[0]) + " " + max1[1] + self.Mode[2])
             self.min.SetValue(str(min1[0]) + " " + min1[1] + self.Mode[2])
-            avg = Units().convert(self.dataval.getavg())
+            avg = Units.convert(self.dataval.getavg())
             self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
             self.samps.SetValue(str(self.dataval.getlen()))
             if self.m_stddev.IsChecked():
                 self.std.SetValue(self.ppmPercent(abs(float(self.dataval.getstd() / self.dataval.getavg()))))
             else:
-                std = Units().convert(self.dataval.getstd())
+                std = Units.convert(self.dataval.getstd())
                 self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
             self.histo.clear()
             if self.histo_width.manual_value()[1] or self.histo_width.manual_value()[2]:
@@ -589,8 +589,8 @@ class GraphFrame(wx.Frame):
             else:
                 n, b, self.hist = self.histo.hist(self.dataval.data, bins=self.bin_control.manual_value(),
                                                   histtype='stepfilled', color='b')
-            self.histoMax.SetValue(str(Units().convert(b[np.where(n == n.max())][0])[0])[0:8] + " " +
-                                   Units().convert(b[np.where(n == n.max())][0])[1] + self.Mode[2])
+            self.histoMax.SetValue(str(Units.convert(b[np.where(n == n.max())][0])[0])[0:8] + " " +
+                                   Units.convert(b[np.where(n == n.max())][0])[1] + self.Mode[2])
             self.histo.set_title(self.Mode[0] + ' Histogram', size=12)
             self.histo.set_xlabel(self.Mode[1], size=10)
             self.histo.set_ylabel("Samples", size=10)
@@ -654,7 +654,7 @@ class GraphFrame(wx.Frame):
             self.Mode = ["Period", "Seconds", "s", "per"]
         if mode == 9:
             self.Mode = ["Frequency", "Hertz", "Hz", "freq"]
-        hp.setMeasure(self.Mode[3])
+        hp.set_measure(self.Mode[3])
         self.paused = False
         self.id = self.id + 1
         self.worker = Worker(self, self.id)
@@ -703,7 +703,8 @@ class GraphFrame(wx.Frame):
     def setCom(self, event):
         global hp
         if len(sys.argv) == 1:
-            dlg = wx.TextEntryDialog(self, "What is the serial port?", value=sorted(serial.tools.list_ports.comports())[0][0])
+            dlg = wx.TextEntryDialog(self, "What is the serial port?",
+                                     value=sorted(serial.tools.list_ports.comports())[0][0])
             dlg.ShowModal()
             com = dlg.GetValue()
             dlg.Destroy()
@@ -717,7 +718,7 @@ class GraphFrame(wx.Frame):
         dlg.ShowModal()
         plc = dlg.GetValue()
         dlg.Destroy()
-        hp.setPlc(plc)
+        hp.set_plc(plc)
 
     def setTerm(self, event):
         global hp
@@ -727,7 +728,7 @@ class GraphFrame(wx.Frame):
                 self.paused = True
                 time.sleep(1)
             term = dlg.GetStringSelection()
-            hp.setTerm(term)
+            hp.set_terminals(term)
             self.paused = False
             self.id = self.id + 1
             self.worker = Worker(self, self.id)
@@ -737,7 +738,8 @@ class GraphFrame(wx.Frame):
         self.worker.stopped = True
         self.Destroy()
 
-    def ppmPercent(self, percent):
+    @staticmethod
+    def ppmPercent(percent):
         if abs(percent * 100) >= 0.001:
             return str(percent * 100)[0:8] + "%"
         else:
@@ -745,8 +747,20 @@ class GraphFrame(wx.Frame):
 
 
 class Units:
-    def __init__(self):
-        global si
+    @staticmethod
+    def convert(number):
+        if number == 0:
+            return [number, '']
+        if number < 0:
+            negative = True
+        else:
+            negative = False
+        if negative:
+            number -= number * 2
+        exponent = int(math.log10(number))
+        if negative:
+            number -= number * 2
+
         si = {
             -18: {'multiplier': 10 ** 18, 'prefix': 'a'},
             -17: {'multiplier': 10 ** 18, 'prefix': 'a'},
@@ -787,18 +801,6 @@ class Units:
             18: {'multiplier': 10 ** 18, 'prefix': 'E'},
         }
 
-    def convert(self, number):
-        if number == 0:
-            return [number, '']
-        if number < 0:
-            negative = True
-        else:
-            negative = False
-        if negative:
-            number -= number * 2
-        exponent = int(math.log10(number))
-        if negative:
-            number -= number * 2
         if exponent < 0:
             exponent -= 1
             return [number * si[exponent]['multiplier'], si[exponent]['prefix']]
