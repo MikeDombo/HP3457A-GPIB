@@ -577,11 +577,11 @@ class GraphFrame(wx.Frame):
                         self.histo_width.manual_value()[0][1] != "":
                     try:
                         center = float(self.histo_width.manual_value()[0][0])
-                    except:
+                    except ValueError:
                         center = 1
                     try:
                         span = float(self.histo_width.manual_value()[0][1])
-                    except:
+                    except ValueError:
                         span = 1
                     rng = (center - span, center + span)
                     n, b, self.hist = self.histo.hist(self.dataval.data, bins=self.bin_control.manual_value(),

@@ -511,7 +511,7 @@ class hp(object):
                 self.plc = float(self.plc)
                 self.gotPlc = True
                 return self.plc
-            except:
+            except ValueError:
                 time.sleep(.1)
                 return self.get_plc()
 
