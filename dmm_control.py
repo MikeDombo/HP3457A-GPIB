@@ -1,3 +1,8 @@
+import HP_3457A
+
+import csv
+import math
+import time
 import os
 import sys
 from threading import Thread
@@ -5,18 +10,15 @@ from threading import Thread
 import wx
 import matplotlib
 import serial.tools.list_ports
+import numpy as np
 
+matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
-import numpy as np
 import pylab
-import HP_3457A
-import csv
-import math
-import time
 
 global hp
-matplotlib.use('WXAgg')
+hp = None
 
 
 class dataval(object):
@@ -37,25 +39,25 @@ class dataval(object):
             self.minnum = val
         if val > self.maxnum:
             self.maxnum = val
-        prevAvg = self.avg
+        prev_avg = self.avg
         self.avg = ((self.avg * self.len) + val) / (self.len + 1)
-        self.devIntermediateSum = self.devIntermediateSum + (val - prevAvg) * (val - self.avg)
+        self.devIntermediateSum = self.devIntermediateSum + (val - prev_avg) * (val - self.avg)
         self.len += 1
         self.data.append(val)
 
-    def getmin(self):
-        return self.minnum
+    def get_min(self):
+        return round(self.minnum, 10)
 
-    def getmax(self):
-        return self.maxnum
+    def get_max(self):
+        return round(self.maxnum, 10)
 
-    def getavg(self):
-        return self.avg
+    def get_avg(self):
+        return round(self.avg, 10)
 
-    def getlen(self):
+    def __len__(self):
         return self.len
 
-    def getstd(self):
+    def get_std(self):
         return math.sqrt(self.devIntermediateSum / self.len)
 
     def clear(self):
@@ -175,13 +177,13 @@ class BinControlBox(wx.Panel):
         return int(self.value)
 
 
-class offsetBox(wx.Panel):
+class OffsetBox(wx.Panel):
     def __init__(self, parent, ID, label):
-        super(offsetBox, self).__init__(parent, ID)
-
+        super(OffsetBox, self).__init__(parent, ID)
         box = wx.StaticBox(self, -1, label)
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        self.manual_text = wx.TextCtrl(self, -1, "", size=(185, 40))
+
+        self.manual_text = wx.StaticText(self, -1, "", size=(185, 40))
         self.manual_text.SetFont(wx.Font(16, wx.FONTFAMILY_DECORATIVE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         manual_box = wx.BoxSizer(wx.HORIZONTAL)
         manual_box.Add(self.manual_text, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -189,9 +191,8 @@ class offsetBox(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-    def SetValue(self, value):
-        self.manual_text.SetValue(value)
-
+    def SetLabel(self, value):
+        self.manual_text.SetLabel(value)
 
 EVT_RESULT_ID = wx.NewId()
 
@@ -219,10 +220,8 @@ class Worker(Thread):
     def run(self):
         if not self.stopped:
             global hp
-            try:
-                hp
-            except NameError:
-                self.setCom()
+            if hp is None:
+                raise EnvironmentError("HP has not been defined!")
             event = ResultEvent(hp.measure(), self.id)
             if not self.stopped:
                 wx.PostEvent(self._notify_window, event)
@@ -234,10 +233,8 @@ class GraphFrame(wx.Frame):
 
         self.menubar = None
         global hp
-        try:
-            hp
-        except NameError:
-            self.setCom(None)
+        if hp is None:
+            self.set_com(None)
 
         self.m_stddev = 0
         self.m_offset = 0
@@ -319,7 +316,7 @@ class GraphFrame(wx.Frame):
         # settings menu
         menu_set = wx.Menu()
         m_ser = menu_set.Append(-1, "Serial Ports", "Set serial port")
-        self.Bind(wx.EVT_MENU, self.setCom, m_ser)
+        self.Bind(wx.EVT_MENU, self.set_com, m_ser)
         m_nplc = menu_set.Append(-1, "NPLC", "Number of Power Line Cycles")
         self.Bind(wx.EVT_MENU, self.setNPLC, m_nplc)
         m_term = menu_set.Append(-1, "Set Terminals", "Set Front/Rear Terminal")
@@ -365,10 +362,10 @@ class GraphFrame(wx.Frame):
         self.Bind(wx.EVT_CHECKBOX, self.on_cb_xlab, self.cb_xlab)
         self.cb_xlab.SetValue(True)
 
-        self.xVal = offsetBox(self.panel, -1, "Cursor X Value")
-        self.yVal = offsetBox(self.panel, -1, "Cursor Y Value")
-        self.std = offsetBox(self.panel, -1, "Standard Deviation")
-        self.histoMax = offsetBox(self.panel, -1, "Histogram Peak")
+        self.xVal = OffsetBox(self.panel, -1, "Cursor X Value")
+        self.yVal = OffsetBox(self.panel, -1, "Cursor Y Value")
+        self.std = OffsetBox(self.panel, -1, "Standard Deviation")
+        self.histoMax = OffsetBox(self.panel, -1, "Histogram Peak")
 
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         self.hbox1.Add(self.pause_button, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -394,23 +391,23 @@ class GraphFrame(wx.Frame):
 
         # Top Block
         self.hbox3 = wx.BoxSizer(wx.HORIZONTAL)
-        self.mainNum = wx.TextCtrl(self.panel, -1, "", size=(440, 90))
+        self.mainNum = wx.StaticText(self.panel, -1, "", size=(440, 90))
         self.mainNum.SetFont(wx.Font(48, wx.FONTFAMILY_DECORATIVE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.vbox6 = wx.BoxSizer(wx.VERTICAL)
         self.hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         self.vbox6.Add(self.mainNum, border=5, flag=wx.ALL)
         self.vbox6.Add(self.hbox4)
-        self.avg = offsetBox(self.panel, -1, "Average")
+        self.avg = OffsetBox(self.panel, -1, "Average")
         self.hbox4.Add(self.avg, border=1, flag=wx.ALL)
-        self.samps = offsetBox(self.panel, -1, "# of Samples")
+        self.samps = OffsetBox(self.panel, -1, "# of Samples")
         self.hbox4.Add(self.samps, border=1, flag=wx.ALL)
         self.vbox2 = wx.BoxSizer(wx.VERTICAL)
         self.hbox3.Add(self.vbox6, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         self.hbox3.Add(self.vbox2, 0, flag=wx.ALIGN_RIGHT | wx.TOP)
-        self.upperLim = offsetBox(self.panel, -1, "Upper Possibility")
-        self.lowerLim = offsetBox(self.panel, -1, "Lower Possibility")
-        self.max = offsetBox(self.panel, -1, "Maximum")
-        self.min = offsetBox(self.panel, -1, "Minimum")
+        self.upperLim = OffsetBox(self.panel, -1, "Upper Possibility")
+        self.lowerLim = OffsetBox(self.panel, -1, "Lower Possibility")
+        self.max = OffsetBox(self.panel, -1, "Maximum")
+        self.min = OffsetBox(self.panel, -1, "Minimum")
         self.vbox2.Add(self.upperLim, border=1, flag=wx.ALL)
         self.vbox2.Add(self.lowerLim, border=1, flag=wx.ALL)
         self.vbox3 = wx.BoxSizer(wx.VERTICAL)
@@ -467,11 +464,12 @@ class GraphFrame(wx.Frame):
 
     def _onMotion(self, event):
         if event.xdata is not None and event.ydata is not None:
-            if int(round(event.xdata)) < self.dataval.getlen() and int(round(event.xdata)) in range(
+            if int(round(event.xdata)) < len(self.dataval) and int(round(event.xdata)) in range(
                     int(self.axes.get_xlim()[0]), int(self.axes.get_xlim()[1])):
-                self.xVal.SetValue(str(int(round(event.xdata))))
-                self.yVal.SetValue(str(Units.convert(self.dataval[int(round(event.xdata))])[0]) + " " +
-                                   Units.convert(self.dataval[int(round(event.xdata))])[1] + self.Mode[2])
+                self.xVal.SetLabel(str(int(round(event.xdata))))
+                y_val = round(self.dataval[int(round(event.xdata))], 10)
+                self.yVal.SetLabel(str(Units.convert(y_val)[0]) + " " +
+                                   Units.convert(y_val)[1] + self.Mode[2])
 
     def init_plot(self):
         self.Mode = ["DC Voltage", "Volts", "V", "dcv"]
@@ -491,7 +489,7 @@ class GraphFrame(wx.Frame):
         self.axes.set_ylabel(self.Mode[1], size=10)
 
         if self.xmax_control.is_auto():
-            xmax = self.dataval.getlen() if self.dataval.getlen() > 100 else 100
+            xmax = len(self.dataval) if len(self.dataval) > 100 else 100
         else:
             xmax = int(self.xmax_control.manual_value())
         if self.xmin_control.is_auto():
@@ -504,12 +502,12 @@ class GraphFrame(wx.Frame):
             else:
                 xmin = int(self.xmin_control.manual_value())
 
-        if xmax == self.dataval.getlen() and xmin == 0:
-            mins = self.dataval.getmin()
+        if xmax == len(self.dataval) and xmin == 0:
+            mins = self.dataval.get_min()
         else:
             mins = min(self.dataval[xmin:xmax])
-        if xmax == self.dataval.getlen() and xmin == 0:
-            maxs = self.dataval.getmax()
+        if xmax == len(self.dataval) and xmin == 0:
+            maxs = self.dataval.get_max()
         else:
             maxs = max(self.dataval[xmin:xmax])
 
@@ -536,36 +534,36 @@ class GraphFrame(wx.Frame):
 
         pylab.setp(self.axes.get_xticklabels(), visible=self.cb_xlab.IsChecked())
         pylab.setp(self.histo.get_xticklabels(), visible=True)
-        self.plot_data.set_xdata(np.arange(self.dataval.getlen()))
+        self.plot_data.set_xdata(np.arange(len(self.dataval)))
         self.plot_data.set_ydata(np.array(self.dataval.data))
 
-        if self.dataval.getlen() > 1:
+        if len(self.dataval) > 1:
             global hp
-            self.mainNum.SetValue(str(Units.convert(self.dataval[self.dataval.getlen() - 1])[0]) + " " +
-                                  Units.convert(self.dataval[self.dataval.getlen() - 1])[1] + self.Mode[2])
-            offset = hp.get_offset(self.Mode[3], self.dataval[self.dataval.getlen() - 1])
+            self.mainNum.SetLabel(str(Units.convert(self.dataval[len(self.dataval) - 1])[0])[0:9] + " " +
+                                  Units.convert(self.dataval[len(self.dataval) - 1])[1] + self.Mode[2])
+            offset = hp.get_offset(self.Mode[3], self.dataval[len(self.dataval) - 1])
             if self.m_offset.IsChecked():
-                self.upperLim.SetValue(self.ppmPercent((float(offset / abs(self.dataval[self.dataval.getlen() - 1])))))
-                self.lowerLim.SetValue(self.ppmPercent((-float(offset / abs(self.dataval[self.dataval.getlen() - 1])))))
+                self.upperLim.SetLabel(self.ppmPercent((float(offset / abs(self.dataval[len(self.dataval) - 1])))))
+                self.lowerLim.SetLabel(self.ppmPercent((-float(offset / abs(self.dataval[len(self.dataval) - 1])))))
             else:
-                self.upperLim.SetValue(
-                    str(Units.convert(self.dataval[self.dataval.getlen() - 1] + offset)[0])[0:8] + " " +
-                    Units.convert(self.dataval[self.dataval.getlen() - 1] + offset)[1] + self.Mode[2])
-                self.lowerLim.SetValue(
-                    str(Units.convert(self.dataval[self.dataval.getlen() - 1] - offset)[0])[0:8] + " " +
-                    Units.convert(self.dataval[self.dataval.getlen() - 1] - offset)[1] + self.Mode[2])
-            max1 = Units.convert(self.dataval.getmax())
-            min1 = Units.convert(self.dataval.getmin())
-            self.max.SetValue(str(max1[0]) + " " + max1[1] + self.Mode[2])
-            self.min.SetValue(str(min1[0]) + " " + min1[1] + self.Mode[2])
-            avg = Units.convert(self.dataval.getavg())
-            self.avg.SetValue(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
-            self.samps.SetValue(str(self.dataval.getlen()))
+                self.upperLim.SetLabel(
+                    str(Units.convert(self.dataval[len(self.dataval) - 1] + offset)[0])[0:8] + " " +
+                    Units.convert(self.dataval[len(self.dataval) - 1] + offset)[1] + self.Mode[2])
+                self.lowerLim.SetLabel(
+                    str(Units.convert(self.dataval[len(self.dataval) - 1] - offset)[0])[0:8] + " " +
+                    Units.convert(self.dataval[len(self.dataval) - 1] - offset)[1] + self.Mode[2])
+            max1 = Units.convert(self.dataval.get_max())
+            min1 = Units.convert(self.dataval.get_min())
+            self.max.SetLabel(str(max1[0]) + " " + max1[1] + self.Mode[2])
+            self.min.SetLabel(str(min1[0]) + " " + min1[1] + self.Mode[2])
+            avg = Units.convert(self.dataval.get_avg())
+            self.avg.SetLabel(str(avg[0])[0:9] + " " + avg[1] + self.Mode[2])
+            self.samps.SetLabel(str(len(self.dataval)))
             if self.m_stddev.IsChecked():
-                self.std.SetValue(self.ppmPercent(abs(float(self.dataval.getstd() / self.dataval.getavg()))))
+                self.std.SetLabel(self.ppmPercent(abs(float(self.dataval.get_std() / self.dataval.get_avg()))))
             else:
-                std = Units.convert(self.dataval.getstd())
-                self.std.SetValue(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
+                std = Units.convert(self.dataval.get_std())
+                self.std.SetLabel(str(std[0])[0:8] + " " + std[1] + self.Mode[2])
             self.histo.clear()
             if self.histo_width.manual_value()[1] or self.histo_width.manual_value()[2]:
                 if self.histo_width.manual_value()[1] and self.histo_width.manual_value()[0][0] != "" and \
@@ -589,7 +587,7 @@ class GraphFrame(wx.Frame):
             else:
                 n, b, self.hist = self.histo.hist(self.dataval.data, bins=self.bin_control.manual_value(),
                                                   histtype='stepfilled', color='b')
-            self.histoMax.SetValue(str(Units.convert(b[np.where(n == n.max())][0])[0])[0:8] + " " +
+            self.histoMax.SetLabel(str(Units.convert(b[np.where(n == n.max())][0])[0])[0:8] + " " +
                                    Units.convert(b[np.where(n == n.max())][0])[1] + self.Mode[2])
             self.histo.set_title(self.Mode[0] + ' Histogram', size=12)
             self.histo.set_xlabel(self.Mode[1], size=10)
@@ -621,7 +619,7 @@ class GraphFrame(wx.Frame):
                 self.timing.append(int(round(time.time() * 1000)))
                 self.draw_plot()
             else:
-                self.mainNum.SetValue("OVLD")
+                self.mainNum.SetLabel("OVLD")
 
     def setMode(self, event):
         dlg = wx.MessageDialog(self, "Changing Measurement Will Clear Previous Data, Continue?",
@@ -697,10 +695,10 @@ class GraphFrame(wx.Frame):
             with open(path, "w", newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow([self.Mode[0], "Timestamp (ms)"])
-                for i in range(0, self.dataval.getlen()):
+                for i in range(0, len(self.dataval)):
                     writer.writerow([self.dataval[i], self.timing[i]])
 
-    def setCom(self, event):
+    def set_com(self, event):
         global hp
         if len(sys.argv) == 1:
             dlg = wx.TextEntryDialog(self, "What is the serial port?",
